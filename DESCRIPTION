@@ -1,0 +1,31 @@
+Package: hespresso
+Type: Package
+Title: Methods for Detecting Shifts in Homeolog Expression Ratios
+    in Allopolyploids
+Version: 0.99.0
+Authors@R: 
+    c(person("Jianqiang", "Sun",
+             email = "sun@bitdessin.dev",
+             role = c("cre", "aut"),
+             comment = c(ORCID = "0000-0002-3438-3199")))
+Description:
+    hespresso blends homeolog expression with espresso, capturing
+    the essence of power, energy, and focus in homeolog expression analysis.
+    It provides statistical tests for detecting shifts in homeolog expression
+    ratios among subgenomes of allopolyploid species across diverse conditions,
+    using RNA-Seq read count data.
+    Take a sip of hespresso, and start your analysis strong!
+Depends: R (>= 4.5)
+Imports: stats, utils, methods, S4Vectors, locfit,
+        parallel, foreach, doParallel,
+        progressr, ggplot2, edgeR, DESeq2, cmdstanr
+Suggests: knitr, rmarkdown, testthat, BiocStyle, pROC, UpSetR, gridExtra
+VignetteBuilder: knitr
+biocViews: RNASeq, Sequencing, GeneExpression, DifferentialExpression,
+        Software
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+URL: https://github.com/bitdessin/hespresso
+BugReports: https://github.com/bitdessin/hespresso/issues

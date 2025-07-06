@@ -1,0 +1,466 @@
+---
+title: "_hespresso_: 2. Case Studies"
+date: "Updated: 2025-07-06; Compiled: `r format(Sys.time(), '%Y-%m-%d')`."
+author:
+    - name: Jianqiang Sun
+      affiliation: |
+        Research Center for Agricultural Information Technology,
+        National Agriculture and Food Research Organization, Japan
+output: 
+    BiocStyle::html_document:
+        highlight: tango
+        toc: true
+        toc_depth: 1
+editor_options:
+    chunk_output_type: console
+bibliography: references.bib
+package: hespresso
+vignette: |
+    %\VignetteEncoding{UTF-8}
+    %\VignetteIndexEntry{hespresso: 2. Case Studies}
+    %\VignetteEngine{knitr::rmarkdown}
+abstract: |
+    In nature, allopolyploid species exhibit diverse subgenome compositions.
+    For example, allotriploids typically contain three subgenomes,
+    two derived from one progenitor species and one from another.
+    Allohexaploids, such as bread wheat, possess six subgenomes,
+    with two contributed by each of three distinct progenitor species.
+    *hespresso* offers the flexibility to analyze a wide range of allopolyploid systems,
+    including those with uneven or complex subgenome structures,
+    such as allotriploids and allohexaploids.
+---
+
+```{r CS-startup, echo=FALSE, results="hide", message=FALSE}
+library(hespresso)
+options(mc.cores = 4)
+options(ggplot2.discrete.colour = c("#999999", "#E69F00", "#56B4E9", "#009E73",
+                                    "#F0E442", "#0072B2", "#D55E00", "#CC79A7"))
+knitr::opts_chunk$set(tidy = FALSE,
+                      cache = FALSE,
+                      error = TRUE,
+                      warning = FALSE,
+                      message = FALSE,
+                      dev = "png",
+                      fig.width = 4.2,
+                      fig.height = 3.0,
+                      fig.small = TRUE)
+set.seed(1)
+```
+
+
+
+# Case Study for Allohexaploid *C. flexuosa*
+
+*Cardamine flexuosa* (2*n* = 4*x* = 32, HHAA), wavy bittercress,
+is an allopolyploid species that originated from two diploid progenitors:
+*Cardamine hirsuta* (2*n* = 2*x* = 16, HH) and *Cardamine amara* (2*n* = 2*x* = 16, AA).
+While *C. hirsuta* is typically adapted to dry habitats such as roadsides,
+*C. amara* inhabits wet environments such as riversides or running streams.
+The allopolyploid *C. flexuosa* thrives across a wide range of ecological habitats.
+
+Akiyama et al. conducted an RNA-Seq experiment using leaf samples of *C. flexuosa*
+collected from wet and dry habitats across three different days [@ref_cflex_ecohabitats].
+Each habitat-date combination included two or three biological replicates.
+Homeolog expression levels were quantified using read count data processed
+through the HomeoRoq sorting pipeline [@ref_homeoroq].
+Analysis of **homeolog expression ratios** (**HERs**) revealed that
+*C. flexuosa* shifts the HERs of a few percent of homeologs
+depending on environmental differences, wet and dry.
+
+In this example, we demonstrate how to use HOBIT and HomeoRoq to analyze the *C. flexuosa* dataset.
+To reduce computation time, we focus on samples collected on May 16, 2013,
+and randomly select 100 homeologs.
+The processed count data is included with the package and can be loaded with the following code.
+
+```{r CS-cflex-load-counts}
+gexp <- read.table(system.file(package = "hespresso", "extdata", "C_flexuosa.tsv.gz"),
+                   header = TRUE, sep = "\t", row.names = 1)
+head(gexp)
+group <- c("wet", "wet", "wet", "dry", "dry", "dry")
+```
+
+Next, load the homeolog mapping table,
+which links gene expression values to their corresponding homeologs.
+This table is a tab-separated file in which the first and second columns
+represent gene names from *C. hirsuta* and *C. amara*, respectively.
+
+```{r CS-cflex-load-mappingtable}
+mapping_table <- read.table(system.file(package = "hespresso", "extdata", "C_flexuosa.homeolog.tsv.gz"),
+                            header = TRUE, sep = "\t")
+head(mapping_table)
+```
+
+We then use the `newExpMX()` function
+to organize the gene expression matrix (`gexp`) into a homeolog expression matrix
+using the mapping table (`mapping_table`) and store the result in an `ExpMX` class object.
+
+```{r CS-cflex-create-expmx}
+x <- newExpMX(gexp, group, mapping_table)
+x
+```
+
+Before performing the test,
+we normalize the raw read counts using the TMM method [@ref_tmm]
+to adjust for differences in library size.
+However, if the expression data (`gexp`) has already been normalized (e.g. FPKM),
+this step can be skipped.
+
+```{r CS-cflex-norm-counts}
+x <- norm_counts(x)
+```
+
+To visualize HER distributions, use the `plot_HER_distr()` function.
+This function returns a list of histograms, one for each condition,
+that shows the HER distribution.
+By default, HER is calculated as the expression ratio of the first subgenome across all subgenomes.
+In this dataset, the first subgenome is derived from *C. hirsuta*,
+as indicated by the first column in the mapping table (`mapping_table`).
+
+```{r CS-cflex-viz-distr}
+distr_plots <- plot_HER_distr(x)
+names(distr_plots)
+```
+
+To display the HER distribution for each group:
+
+```{r CS-cflex-viz-distr-show, fig.cap="Distribution of Homeolog Expression Ratios. Histograms show the distributions of homeolog expression ratios in _C. flexuosa_ under two ecological habitats: wet and dry.", fig.height=2.6}
+library(ggplot2)
+library(gridExtra)
+
+grid.arrange(distr_plots[["wet"]] + ggtitle("wet"),
+             distr_plots[["dry"]] + ggtitle("dry"),
+             ncol = 2)
+```
+
+Note that since this sample contains only 100 randomly selected homeologs,
+the HER distributions shown here do not represent the full dataset.
+
+After visually inspecting the data distribution,
+if no irregularities are observed, the statistical test can be applied.
+
+
+## HOBIT
+
+HOBIT [@ref_hobit] can be executed using the `hobit()` function, which performs
+a statistical test to detect homeologs with shifts in expression ratios,
+referred to as **ratio-shifted homeologs** (**RSHs**), between wet and dry habitats.
+
+```{r CS-cflex-hobit, results="hide", message=FALSE, warning=FALSE}
+x_output <- hobit(x)
+```
+
+
+```{r CS-cflex-hobit-output}
+head(x_output)
+```
+
+The order of the test output matches that of the input.
+To rank the output in descending order of *p*-values, use the following code.
+
+```{r CS-cflex-hobit-sorted-output}
+head(x_output[order(x_output$pvalue), ])
+```
+
+To visualize homeologs with HER shifts between wet and dry habitats,
+use the `plot_HER()` function. This function creates a scatter plot of HERs
+calculated from the wet and dry groups. By default, HER is defined as the
+expression ratio of the first subgenome (i.e., the subgenome derived from
+*C. hirsuta*) relative to the total expression across all subgenomes.
+In the example below, homeologs with *p*-values less than 0.01 are highlighted.
+
+
+```{r CS-cflex-viz-highlight, fig.cap="Changes in Homeolog Expression Ratios Between Wet and Dry Habitats. Each point represents the homeolog expression ratio in wet (x-axis) and dry (y-axis) habitats. Orange points indicate homeologs with significant changes in expression ratios between the two conditions, as detected by HOBIT, while gray points represent those without significant changes."}
+is_sig <- ifelse(x_output$pvalue < 0.01, "p<0.01", "p>=0.01")
+plot_HER(x, label = is_sig)
+```
+
+Note that, for actual studies, a more stringent threshold
+such as *q*-value <0.01 is recommended.
+
+
+## HomeoRoq
+
+For allopolyploids composed of two subgenomes under two different conditions,
+HomeoRoq [@ref_homeoroq] is also a one of choices for detecting RSHs.
+It can be executed using the `homeoroq()` function as shown below.
+
+
+```{r CS-cflex-hq-seed, echo=FALSE}
+set.seed(1)
+```
+
+```{r CS-cflex-hq-run, results="hide", message=FALSE, warning=FALSE}
+x_homeoroq <- homeoroq(x)
+```
+
+```{r CS-cflex-hq-output}
+head(x_homeoroq[order(x_homeoroq$pvalue), ])
+```
+
+The overlap of RSHs detected by HOBIT and HomeoRoq can be
+visualized using an UpSet plot, implemented in the `r CRANpkg("UpSetR")` package.
+
+```{r CS-cflex-overlaps, fig.cap="Overlap of ratio-shifted Homeologs Detected by HOBIT and HomeoRoq."}
+library("UpSetR")
+sig_homeologs <- list(
+    HOBIT = x_output$gene[x_output$pvalue < 0.01],
+    HomeoRoq = x_homeoroq$gene[x_homeoroq$pvalue < 0.01]
+)
+
+upset(fromList(sig_homeologs))
+```
+
+Additionally, RSHs detected by both methods can be visualized using the `plot_HER()` function.
+
+```{r CS-cflex-overlaps-highlight, fig.cap="Comparison of Ratio-Shifted Homeologs Detection by HOBIT and HomeoRoq. Each point represents the homeolog expression ratio in wet (x-axis) and dry (y-axis) habitats. Points labeled with n.s. represent homeologs without significant changes detected by either method, while other points represent ratio-shifted homeologs detected by the corresponding methods."}
+is_sig <- rep("n.s.", length = nrow(x_output))
+is_sig[x_output$pvalue < 0.01] <- "HOBIT"
+is_sig[x_homeoroq$pvalue < 0.01] <- "HomeoRoq"
+is_sig[x_output$pvalue < 0.01 & x_homeoroq$pvalue < 0.01] <- "HOBIT&HomeoRoq"
+is_sig <- factor(is_sig, levels = c("n.s.", "HOBIT", "HomeoRoq", "HOBIT&HomeoRoq"))
+plot_HER(x, label = is_sig)
+```
+
+
+# Case Study for Allotriploid *C. insueta*
+
+Allotriploid *Cardamine insueta* (2n = 3x = 24, RRA)
+serves as an example of uneven subgenome composition.
+Two of its subgenomes are derived from *Cardamine rivularis* (2n = 2x = 16, RR),
+a species inhabiting grassy areas away from riversides.
+The third subgenome comes from *Cardamine amara* (2n = 2x = 16, AA),
+a species typically found on riversides or in streams.
+RNA-Seq studies on *C. insueta* leaflets floating on water suggested that
+*C. insueta* shifts HERs over time following submergence [@ref_cins_submergestress].
+
+Here, we demonstrate how to detect RSHs across time points using HOBIT, similar to ANOVA.
+We use a sample dataset that includes 100 homeologs randomly selected from the original experiment.
+The data spans nine time points following leaf submergence and can be loaded with the following code.
+
+```{r CS-cins-load-counts}
+gexp <- read.table(system.file(package = "hespresso", "extdata", "C_insueta.tsv.gz"),
+                   header = TRUE, sep = "\t", row.names = 1)
+head(gexp)
+group <- c("T00", "T02", "T04", "T08", "T12", "T24", "T48", "T72", "T96")
+```
+
+Next, load the homeolog mapping table,
+which links gene expression values to their corresponding homeologs.
+This file is tab-separated, with the first and second columns
+representing genes from *C. rivularis* and *C. amara*, respectively.
+
+```{r CS-cins-load-mappingtable}
+mapping_table <- read.table(system.file(package = "hespresso", "extdata", "C_insueta.homeolog.tsv.gz"),
+                            header = TRUE, sep = "\t")
+head(mapping_table)
+```
+
+Use the `newExpMX()` function
+to create a homeolog expression matrix from the gene expression data (`gexp`)
+and mapping table (`mapping_table`).
+The result is stored as an `ExpMX` class object.
+
+```{r CS-cins-create-expmx}
+x <- newExpMX(gexp, group, mapping_table)
+x
+```
+
+Normalize the read counts using the TMM method [@ref_tmm],
+since the data has not been normalized.
+
+```{r CS-cins-norm-counts}
+x <- norm_counts(x)
+```
+
+User can visualize the HER distribution using the `plot_HER_distr` function.
+By default, HER is calculated as the expression ratio of the first subgenome across all subgenomes,
+where the first subgenome corresponds to *C. rivularis* as it listed in the first column
+of the mapping table (`mapping_table`).
+The `plot_HER_distr()` function to generate a histogram for each time point.
+
+```{r CS-cins-viz-HER-distr, fig.cap="Distribution of Homeolog Expression Ratios. Histograms display the distributions of homeolog expression ratios in _C. insueta_ across nine time points following leaf submergence in water.", fig.height=4.8}
+distr_plots <- plot_HER_distr(x)
+
+library(ggplot2)
+library(gridExtra)
+distr_plots <- lapply(seq_along(distr_plots), function(p) {
+    distr_plots[[p]] + ggtitle(names(distr_plots)[p])
+})
+grid.arrange(grobs = distr_plots, ncol = 3)
+```
+
+These visualizations show that
+most homeologs in *C. insueta* are expressed with a 2 to 1 ratio
+between the *C. rivularis* and *C. amara* subgenomes,
+as the histogram peaks are centered around two-thirds.
+
+Now apply the `hobit()` function to detect homeologs with differential HERs
+across the nine time points following leaf submergence.
+Note that, since this dataset has only one replicate per condition,
+we set `no_replicate = TRUE` to avoid errors arising from dispersion estimation,
+which requires multiple replicates.
+
+```{r CS-cins-hobit, results="hide", message=FALSE, warning=FALSE}
+x_output <- hobit(x, no_replicate = TRUE)
+```
+
+```{r CS-cins-hobit-output}
+head(x_output)
+```
+
+
+# Case Study for Allohexaploid *T. aestivum* (Bread Wheat)
+
+Bread wheat, *Triticum aestivum*, is one of the world’s most important crops
+and also serves as a model for studying allopolyploid species.
+It originated through hybridization among three diploid progenitor species and contains three distinct types of subgenomes.
+To demonstrate the applicability of HOBIT to allohexaploid species,
+we present a case study using wheat RNA-Seq data
+to detect homeologs with shifting HERs between two tissues,
+shoot apex and leaf [@ref_wheatseedmatrix].
+
+In this example, 100 homeologs were randomly selected from the original dataset.
+The expression data can be loaded using the following code.
+
+```{r CS-wheat-load-counts}
+gexp <- read.table(system.file(package = "hespresso", "extdata", "T_aestivum.tsv.gz"),
+                   header = TRUE, sep = "\t", row.names = 1)
+head(gexp)
+group <- c("apex", "apex", "apex", "leaf", "leaf", "leaf")
+```
+
+Next, load the mapping table that links each gene to its corresponding homeologs.
+Since wheat has three subgenomes, this table contains three columns,
+each representing one subgenome.
+
+```{r CS-wheat-load-mappingtable}
+mapping_table <- read.table(system.file(package = "hespresso", "extdata", "T_aestivum.homeolog.tsv.gz"),
+                            header = TRUE, sep = "\t")
+head(mapping_table)
+```
+
+We then construct an `ExpMX` class object using the `newExpMX()` function.
+This converts the gene expression matrix (`gexp`)
+into a homeolog expression matrix based on the mapping table (`mapping_table`).
+
+```{r CS-wheat-create-expmx}
+x <- newExpMX(gexp, group, mapping_table)
+x
+```
+
+Normalization is performed using the TMM method [@ref_tmm]
+to correct for differences in library sizes.
+This step can be skipped
+if the expression data (`gexp`) has already been normalized.
+
+```{r CS-wheat-norm-counts}
+x <- norm_counts(x)
+```
+
+To visualize HER distributions, use the `plot_HER_distr()` function.
+By default, HER is calculated as the expression ratio of the first subgenome across all subgenomes.
+In this dataset, the first subgenome corresponds to the A subgenome,
+as indicated by the first column of the mapping table (`mapping_table`).
+
+```{r CS-wheat-viz-distr, fig.cap="Distribution of Homeolog Expression Ratios in A-Subgenome of Wheat. Histograms show the distributions of homeolog expression ratios from the A-subgenome of wheat in apex shoot and leaf tissues.", fig.height=2.6}
+distr_plots_A <- plot_HER_distr(x)
+names(distr_plots_A)
+
+library(ggplot2)
+library(gridExtra)
+
+grid.arrange(distr_plots_A[["apex"]] + ggtitle("apex on A subgenome"),
+             distr_plots_A[["leaf"]] + ggtitle("leaf on A subgenome"),
+             ncol = 2)
+```
+
+To calculate HERs from the second or third subgenome, set the `base` option accordingly.
+For example, to calculate HERs of the second and third subgenomes
+(i.e., B-subgenome and D-subgenome), set `base = 2` and `base = 3`, respectively.
+
+```{r CS-wheat-viz-distrs, fig.cap="Distribution of Homeolog Expression Ratios Across All Subgenomes. Histograms display the distributions of homeolog expression ratios for the A, B, and D subgenomes of wheat in apex shoot and leaf tissues.", fig.height=4.8}
+distr_plots_B <- plot_HER_distr(x, base = 2)
+distr_plots_D <- plot_HER_distr(x, base = 3)
+
+grid.arrange(distr_plots_A[["apex"]] + ggtitle("apex on A"), distr_plots_A[["leaf"]] + ggtitle("leaf on A"),
+             distr_plots_B[["apex"]] + ggtitle("apex on B"), distr_plots_B[["leaf"]] + ggtitle("leaf on B"),
+             distr_plots_D[["apex"]] + ggtitle("apex on D"), distr_plots_D[["leaf"]] + ggtitle("leaf on D"),
+             ncol = 2)
+```
+
+
+Histogram peaks at one-third for all subgenomes indicate that
+most homeologs in wheat are equally expressed from the three subgenomes.
+
+After visually checking HER distributions,
+use the `hobit()` function to identify homeologs showing significant changes in HERs
+between shoot apex and leaf tissues.
+
+```{r CS-wheat-run-hobit, results="hide", message=FALSE, warning=FALSE}
+x_output <- hobit(x)
+```
+
+```{r CS-wheat-hobit-output}
+head(x_output)
+```
+
+The output can be sorted in ascending order of *p*-values using the following code.
+
+```{r CS-wheat-hobit-sort-output}
+head(x_output[order(x_output$pvalue), ])
+```
+
+We then visualize HER changes of the first subgenome between the two tissues.
+In the visualization, homeologs with *q*-values less than 0.01 are highlighted.
+
+```{r CS-wheat-viz-HER-changes, fig.cap="Changes in Homeolog Expression Ratios of the A-Subgenome Between Shoot Apex and Leaf Tissues. Each point represents the homeolog expression ratio in shoot apex (x-axis) and leaf tissue (y-axis). Orange points indicate homeologs with significant changes in expression ratios between the two tissues, while gray points represent those without significant changes."}
+is_sig <- ifelse(x_output$qvalue < 0.01, "q<0.01", "q>=0.01")
+plot_HER(x, label = is_sig)
+```
+
+To switch the base subgenome used for HER calculation,
+set `base` to the appropriate subgenome number.
+For example, to use the second subgenome, run the following:
+
+```{r CS-wheat-viz-HER-changes-base-2, fig.cap="Changes in Homeolog Expression Ratios of the B-Subgenome Between Shoot Apex and Leaf Tissues. Each point represents the homeolog expression ratio in shoot apex (x-axis) and leaf tissue (y-axis). Orange points indicate homeologs with significant changes in expression ratios between the two tissues, while gray points represent those without significant changes."}
+plot_HER(x, base = 2, label = is_sig)
+```
+
+Note that HER values are calculated for the selected subgenome,
+while highlighted homeologs are those that meet the significance threshold in any subgenome.
+As a result, some homeologs may appear highlighted even if they show only minor changes in the plot,
+since they may have significantly changed HERs in another subgenome.
+
+Additionally, users who wish to test HERs between the combined expression of
+the A and B subgenomes versus the D subgenome can use the `combine_hexp()` function
+to merge the homeolog expression values of A and B before conducting the statistical test.
+Assuming the A and B subgenomes are stored as the first and second subgenomes in the `x` object
+(as defined in the `mapping_table`), set `subgenomes = c(1, 2)` to combine them:
+
+```{r CS-wheat-combine-subgenomes}
+x_ABvsD <- combine_hexp(x, subgenomes = c(1, 2))
+x_ABvsD
+```
+
+Next, HOBIT can be applied to the combined dataset as below.
+
+```{r CS-wheat-combine-subgenomes-hobit, results="hide", message=FALSE, warning=FALSE}
+x_ABvsD_output <- hobit(x_ABvsD)
+```
+
+```{r CS-wheat-combine-subgenomes-hobit-output}
+head(x_ABvsD_output[order(x_ABvsD_output$pvalue), ])
+```
+
+
+# Session Information
+
+```{r CS-sessionInfo}
+sessionInfo()
+```
+
+
+
+# References
+
+

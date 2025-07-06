@@ -1,0 +1,522 @@
+---
+title: "_hespresso_: 1. Overview"
+date: "Updated: 2025-07-06; Compiled: `r format(Sys.time(), '%Y-%m-%d')`."
+author:
+    - name: Jianqiang Sun
+      affiliation: |
+        Research Center for Agricultural Information Technology,
+        National Agriculture and Food Research Organization, Japan
+output: 
+    BiocStyle::html_document:
+        highlight: pygments
+        toc: true
+        toc_depth: 1
+editor_options:
+    chunk_output_type: console
+bibliography: references.bib
+package: hespresso
+vignette: |
+    %\VignetteIndexEntry{hespresso: 1. Overview}
+    %\VignetteEncoding{UTF-8}
+    %\VignetteEngine{knitr::rmarkdown}
+abstract: |
+    _hespresso_ blends _homeolog expression_ with _espresso_, capturing
+    the essence of power, energy, and focus in homeolog expression analysis.
+    It provides statistical tests for detecting shifts in homeolog expression
+    ratios among subgenomes of allopolyploid species across diverse conditions,
+    using RNA-Seq read count data.
+---
+
+```{r QS-startup-chunk, echo=FALSE, results="hide", message=FALSE}
+library(hespresso)
+options(mc.cores = 4)
+options(ggplot2.discrete.colour = c("#999999", "#E69F00", "#56B4E9", "#009E73",
+                                    "#F0E442", "#0072B2", "#D55E00", "#CC79A7"))
+knitr::opts_chunk$set(tidy = FALSE,
+                      cache = FALSE,
+                      error = TRUE,
+                      warning = FALSE,
+                      message = FALSE,
+                      dev = "png",
+                      fig.width = 4.2,
+                      fig.height = 3.0,
+                      fig.small = TRUE)
+set.seed(1)
+```
+
+
+
+# Introduction
+
+
+**Allopolyploids** arise through hybridization between two or more related species
+and possess multiple sets of chromosomes derived from distinct progenitors, referred to as **subgenomes**.
+Duplicated gene copies across these subgenomes, called **homeologs**,
+are thought to enhance the adaptability of allopolyploids,
+potentially allowing them to occupy broader ecological niches than their progenitors
+by regulating **homeolog expression ratios** (**HERs**) in response to developmental and environmental changes
+[@ref_robustgeneral; @ref_polyploid_stresstolerance].
+
+Experimental studies have shown that HERs can shift in response to environmental stimuli.
+For example, Akama et al. and Paape et al. reported that
+a small proportion of homeologs in _Arabidopsis kamchatica_ (2*n* = 4*x* = 32, HHLL),
+an allotetraploid derived from _Arabidopsis halleri_ (2*n* = 2*x* = 16, HH) and _Arabidopsis lyrata_ (2*n* = 2*x* = 16, LL),
+exhibited HER shifts under cold and zinc stress [@ref_homeoroq; @ref_kamzinc].
+Similarly, Akiyama et al. found that an allotetraploid _Cardamine flexuosa_ (2*n* = 4*x* = 32, HHAA),
+derived from _Cardamine hirsuta_ (2*n* = 2*x* = 16, HH) and _Cardamine amara_ (2*n* = 2*x* = 16, AA),
+displays distinct HER patterns across ecological habitats [@ref_cflex_ecohabitats].
+In another case, _Cardamine insueta_ (2*n* = 3*x* = 24, RRA),
+a triploid resulting from hybridization between _Cardamine rivularis_ (2*n* = 2*x* = 16, RR) and _C. amara_
+modulates HERs in response to submergence stress [@ref_cins_submergestress].
+
+The `r Biocpkg("hespresso")` package is designed to detect homeologs with shifted expression ratios,
+referred to as **ratio-shifted homeologs** (**RSHs**),
+across diverse conditions using RNA-Seq data from allopolyploids.
+It provides two methods for RSH detection, **HOBIT** [@ref_hobit] and **HomeoRoq** [@ref_homeoroq].
+HOBIT supports a wide range of allopolyploid systems,
+including those with uneven or complex subgenome compositions,
+and allows comparisons across multiple conditions.
+In contrast, HomeoRoq offers an alternative approach specifically designed
+to detect RSHs between two conditions in allotetraploids.
+Simulation benchmarking indicates that
+HOBIT achieves a better balance between precision and recall, resulting in a higher F1 score,
+while HomeoRoq tends to yield higher precision at the cost of lower recall.
+
+Whether comparing tissues, developmental stages, stress conditions, or habitats,
+`r Biocpkg("hespresso")` equips researchers with the statistical power and flexibility
+needed for homeolog expression analysis.
+Take a sip of `r Biocpkg("hespresso")` and begin your analysis with confidence.
+
+
+# Installation
+
+To install the `r Biocpkg("hespresso")` package,
+start R (version 4.5 or later) and run the following commands:
+
+```{r QS-install-package, eval=FALSE}
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("hespresso")
+```
+
+Note that to install the latest version of `r Biocpkg("hespresso")`
+requires the latest version of R.
+
+
+
+# Quick Start
+
+The following example demonstrates how to load homeolog expression data from
+files and detect RSHs across conditions using HOBIT.
+
+```{r QS-quickstart, results="hide", message=FALSE, warning=FALSE}
+# gene expression
+gexp <- read.table(system.file(package = "hespresso", "extdata", "C_flexuosa.tsv.gz"),
+                   header = TRUE, sep = "\t", row.names = 1)
+
+# experimental groups
+group <- c("wet", "wet", "wet", "dry", "dry", "dry")
+
+# mapping table to organize gene expression into homeolog expression
+mapping_table <- read.table(system.file(package = "hespresso", "extdata", "C_flexuosa.homeolog.tsv.gz"),
+                            header = TRUE, sep = "\t")
+
+# data preparation
+x <- newExpMX(gexp, group, mapping_table)
+
+# normalization
+x <- norm_counts(x)
+
+# statistical test
+x_output <- hobit(x)
+```
+
+
+
+# HOBIT
+
+HOBIT [@ref_hobit] is a statistical method designed to detect RSHs across multiple conditions.
+It employs a **likelihood ratio test** (**LRT**) to compare two hierarchical
+models: a full model that allows HERs to vary among conditions
+and a reduced model that assumes constant HERs across all conditions.
+
+HOBIT models homeolog expression with a **negative binomial** (**NB**) distribution.
+Specifically, the expression level of a homeolog on the $i$-th subgenome,
+denoted as $x_i$, is assumed to follow an NB distribution with mean
+$\mu\theta_i$ and dispersion $\phi$,
+
+$$
+x_{i} \sim NB(\mu\theta_{i}, \phi)
+$$
+
+where $\mu$ represents the total gene expression across all subgenomes
+and $\theta_{i}$ denotes the HER for the $i$-th subgenome.
+
+By default, HOBIT samples the $\mu$ and $\boldsymbol{\theta} = \left(\theta_{1}, \theta_{2}, \cdots \right)$
+from **non-informative prior** (**NIP**) distributions.
+The dispersion parameter $\phi$ is estimated using the `estimateDisp()` function from the `r Biocpkg("edgeR")` package.
+Based on these assumptions, HOBIT performs **Markov chain Monte Carlo** (**MCMC**) sampling
+to fit both the full and reduced models and to compute their respective likelihoods.
+Then, a LRT is conducted using the likelihoods derived from the two models.
+
+The `hobit()` function provides an end-to-end interface for parameter estimation,
+model fitting, likelihood computation, and the LRT.
+It internally uses the `sample()` function from the
+_[cmdstanr](https://mc-stan.org/cmdstanr/)_ package to perform MCMC sampling,
+inheriting its configuration options for flexible and scalable inference.
+
+
+## Inputs
+
+The `hobit()` function requires an input object of class `ExpMX`.
+To create this object from real RNA-Seq data,
+users need to provide the following three components:
+
+- a gene expression matrix
+- a vector or data frame of condition labels
+- a mapping table to organize gene expression data into homeolog expression
+
+The following example shows how to load gene expression data,
+define experimental conditions, and load the mapping table from a file.
+
+```{r QS-hobit-input-preparation-gexp}
+gexp <- read.table(system.file(package = "hespresso", "extdata", "C_flexuosa.tsv.gz"),
+                   header = TRUE, sep = "\t", row.names = 1)
+head(gexp)
+```
+
+The gene expression matrix (`gexp`) should be a data frame or matrix,
+with row names corresponding to gene names.
+
+```{r QS-hobit-input-preparation-mappingtable}
+group <- c("wet", "wet", "wet", "dry", "dry", "dry")
+group
+mapping_table <- read.table(system.file(package = "hespresso", "extdata", "C_flexuosa.homeolog.tsv.gz"),
+                            header = TRUE, sep = "\t")
+head(mapping_table)
+```
+
+The mapping table (`mapping_table`) is a data frame
+in which the first and second columns correspond to gene names
+from _C. hirsuta_ and _C. amara_, respectively.
+It is assumed that all gene names in both columns appear
+in the row names of gene expression matrix (`gexp`).
+
+Once the three required components are prepared,
+an `ExpMX` object can be created using the `newExpMX()` function.
+
+```{r, QS-hobit-input-newExpMX}
+x <- newExpMX(gexp, group, mapping_table)
+x
+```
+
+
+## Test
+
+Usually, normalization is required to correct for differences in library sizes
+across replicates.
+If the given expression data (`gexp`) have not been normalized,
+apply an appropriate normalization method before analysis.
+In this example, we normalize the data using the `norm_counts()` function
+provided in the `r Biocpkg("hespresso")` package.
+
+```{r, QS-hobit-run-norm}
+x <- norm_counts(x)
+```
+
+By default, `norm_counts()` function performs TMM normalization
+by internally calling the `r Biocpkg("edgeR")` package.
+However, users may choose to perform normalization using other appropriate
+packages such as `r Biocpkg("edgeR")` or `r Biocpkg("DESeq2")`.
+Note that, this step can be skipped
+if the expression data has already been normalized, such as FPKM and TPM.
+
+Once the `ExpMX` object is prepared and the data are normalized,
+RSHs can be detected using HOBIT by running the `hobit()` function, as shown below.
+
+```{r, QS-hobit-run-hobit, eval=FALSE}
+x_output <- hobit(x)
+```
+
+
+## Outputs
+
+The result (`x_output`) is a DataFrame object (defined in the `r Biocpkg("S4Vectors")` package),
+with one row per homeolog.
+The row order corresponds to the input,
+and the columns summarize the results of the statistical test.
+
+- `gene`: Homeolog ID. The gene names defined in the first column of the mapping table.
+- `pvalue`: *p*-value from the LRT using normalized likelihoods.
+- `qvalue`: Adjusted *p*-value using the Benjamini-Hochberg method.
+- `raw_pvalue`: *p*-value from the LRT using raw likelihoods.
+- `raw_qvalue`: Adjusted raw *p*-value using the Benjamini-Hochberg method.
+- `Dmax`: Maximum absolute difference of HERs between conditions.
+- `ORmax`: Maximum odds ratio of HERs between conditions.
+- `theta0__<s>`: Posterior HER estimates shared across all conditions, where `<s>` denotes the subgenome name. These parameters are used to compute the log-likelihood of the reduced model.
+- `theta__<s>__<g>`: Posterior HER estimates specific to each condition, where `<s>` denotes the subgenome name and and `<g>` denotes the group name. These parameters are used to compute the log-likelihood of the full model.
+- `logLik_H1`: Log-likelihood of the full model.
+- `logLik_H0`: Log-likelihood of the reduced model.
+
+
+```{r, QS-hobit-output-print}
+head(x_output)
+```
+
+
+## Options
+
+### Basic Options
+
+Below is a basic example of running the `hobit()` function.
+
+```{r QS-hobit-basicopts-default, eval=FALSE}
+x_output <- hobit(x)
+```
+
+By default, `hobit()` uses multiple threads,
+defined by the `mc.cores` option in the global environment, for MCMC sampling,
+If `mc.cores` is not set, it defaults to using a single thread.
+Users can customize the number of threads to accelerate the testing process
+by either setting `mc.cores` (e.g., `options(mc.cores = 8)`)
+or specifying the `n_threads` argument directly. For example:
+
+```{r QS-hobit-basicopts-nthreads, eval=FALSE}
+x_output <- hobit(x, n_threads = 8)
+```
+
+Additionally, user can control parallelization of the MCMC sampling process via the `parallel_chains` argument.
+When specified, this argument is passed directly to the `sample()` function from the
+_[cmdstanr](https://mc-stan.org/cmdstanr/)_ package, allowing parallel execution of MCMC chains.
+
+For example, to run four parallel chains, each on a separate thread:
+
+```{r QS-hobit-basicopts-run-parallel, eval=FALSE}
+x_output <- hobit(x, n_threads = 1, parallel_chains = 4, chains = 4)
+```
+
+Note that the `n_threads` and `parallel_chains` arguments
+control parallelization at different stages.
+The `n_threads` argument controls parallelization during the processing of homeologs,
+while `parallel_chains` controls parallelization during MCMC chains.
+Hence, if both are specified, users should reserve `n_threads` × `parallel_chains` threads.
+
+
+### Model Options
+
+By default, HOBIT assumes that homeolog expression follows a NB distribution.
+In this model, the mean is sampled from a NIP distribution,
+and the dispersion parameter is estimated using the `estimateDisp()` function from the `r Biocpkg("edgeR")` package.
+In addition to these defaults, HOBIT provides options for users to customize these assumptions as needed.
+
+To switch from the default NB distribution to a zero-inflated negative binomial
+(ZINB) distribution, user can set `dist = "ZINB"`.
+
+```{r QS-hobit-modelopts-ZINB, eval=FALSE}
+x_output <- hobit(x, dist = "ZINB")
+```
+
+By default, HERs are sampled from NIP distributions,
+with the constraint that their sum equals 1.
+Beside the defaults, HOBIT also supports using a Dirichlet prior distribution,
+with parameters estimated from the observed homeolog expression values.
+This can be enabled by setting the `use_prior` option, as shown below.
+
+```{r QS-hobit-modelopts-useprior, eval=FALSE}
+x_output <- hobit(x, use_prior = TRUE)
+```
+
+The default dispersion estimation method requires multiple biological replicates per group.
+If the dataset contains only a single replicate per group, dispersion estimation will fail.
+In such cases, HOBIT provides the `no_replicate` option.
+When set to `TRUE`, all replicates are treated as if they belong to a single group for dispersion estimation.
+
+```{r QS-hobit-modelopts-norep, eval=FALSE}
+x_output <- hobit(x, no_replicate = TRUE)
+```
+
+Note that while dispersion estimation without replicates can be enabled by setting `no_replicate = TRUE`,
+this approach is not recommended for biological experiments.
+For reliable statistical inference,
+we strongly encourage reconsidering the experimental design to include multiple biological replicates per group.
+
+
+### MCMC Options
+
+Several options control the behavior of MCMC sampling and
+can significantly affect the accuracy and efficiency of inference.
+Although `hobit()` supports all options available in the `sample()` function
+from the _[cmdstanr](https://mc-stan.org/cmdstanr/)_ package,
+the following are particularly important.
+
+- `chains`: Number of MCMC chains to run (default: `4`).
+- `iter_warmup`: Number of warmup iterations per chain (default: `1000`).
+- `iter_sampling`: Number of post-warmup iterations per chain (default: `1000`).
+- `save_warmup`: Whether to save warmup iterations (default: `FALSE`).
+- `thin`: Interval at which samples are saved (default: `1`). Typically unchanged unless memory issues arise.
+- `max_treedepth`: Maximum tree depth for the NUTS sampler (default: `10`). Increasing it may help resolve convergence issues but slows execution.
+- `adapt_delta`: Target acceptance rate for the sampler (default: `0.8`). Higher values improve stability but may reduce speed.
+
+The following example increases the number of chains and iterations to improve stability and convergence,
+though at the cost of longer execution times:
+
+```{r QS-hobit-mcmcopts-iters, eval=FALSE}
+x_output <- hobit(x, chains = 8, iter_warmup = 2000, iter_sampling = 10000)
+```
+
+If warnings or convergence issues arise with the default settings,
+consider increasing `max_treedepth` and `adapt_delta`.
+Note that increasing these parameters may result in slower sampling.
+
+```{r QS-hobit-mcmcopts-depth, eval=FALSE}
+x_output <- hobit(x, max_treedepth = 12, adapt_delta = 0.95)
+```
+
+For more advanced configuration options, refer to the
+[cmdstanr documentation](https://mc-stan.org/cmdstanr/reference/model-method-sample.html).
+
+
+### Verbosity Options
+
+Verbosity options are available to control the verbosity of progress messages during sampling.
+
+- `refresh`: Frequency of progress updates to the console (default: `100`). Set to `0` to suppress updates.
+- `show_messages`: Whether to print all diagnostic and progress messages (default: `TRUE`).
+
+To reduce console output during execution, adjust these settings as shown below.
+
+```{r QS-hobit-vvopts, eval=FALSE}
+x_output <- hobit(x, refresh = 0, show_messages = FALSE)
+```
+
+
+
+# HomeoRoq
+
+HomeoRoq [@ref_homeoroq] estimates the probability that
+HERs remain constant between two experimental groups using RNA-Seq read count data for each homeolog.
+Since this probability cannot be derived analytically,
+HomeoRoq adopts a Bayesian framework to approximate the posterior distribution of HERs
+under the null hypothesis of no change between conditions.
+
+The `homeoroq()` function provides a comprehensive interface for detecting RSHs.
+By default, it performs 10,000 sampling iterations (`iter_sampling = 1e4`) per probability calculation
+and repeats the calculation four times (`chians = 4`).
+However, for robust and reproducible estimation of statistical significance (i.e., *p*-values),
+it is recommended to run multiple independent sampling replicates,
+each with a sufficiently large number of iterations.
+To reproduce the settings used in the original HomeoRoq implementation [@ref_homeoroq],
+set `chains = 10` and `iter_sampling = 1e4`.
+
+## Inputs
+
+The `homeoroq()` function requires an input object of class `ExpMX`,
+same to the `hobit()` function.
+
+
+```{r QS-hq-input-newExpMX}
+gexp <- read.table(system.file(package = "hespresso", "extdata", "C_flexuosa.tsv.gz"),
+                   header = TRUE, sep = "\t", row.names = 1)
+group <- c("wet", "wet", "wet", "dry", "dry", "dry")
+mapping_table <- read.table(system.file(package = "hespresso", "extdata", "C_flexuosa.homeolog.tsv.gz"),
+                            header = TRUE, sep = "\t")
+x <- newExpMX(gexp, group, mapping_table)
+```
+
+## Test
+
+Once an `ExpMX` object is prepared,
+normalize the counts if the data have not already been normalized,
+then run the test using the `homeoroq()` function.
+
+```{r QS-hq-run-homeoroq, results="hide", message=FALSE, warning=FALSE}
+x <- norm_counts(x)
+x_output <- homeoroq(x)
+```
+
+
+## Outputs
+
+The result (`x_output`) is a DataFrame class object with one row per homeolog,
+summarizing the statistical test results:
+
+
+- `gene`: Homeolog ID. The gene names defined in the first column of the mapping table.
+- `pvalue`: *p*-value from the likelihood ratio test.
+- `qvalue`: Adjusted *p*-value using the Benjamini-Hochberg method.
+- `sumexp__<s>__<g>`: Total read counts for subgenome `<s>` under condition `<g>`.
+- `ratio__<s>__<g>`: HERs for subgenome `<s>` under condition `<g>`.
+- `ratio_sd`: Standard deviation of HERs calculated from observed counts.
+
+
+```{r, OS-hq-output}
+head(x_output)
+```
+
+
+## Options
+
+The number of iterations and number of samples drawn per iteration can be
+adjusted using the `n_iters` and `iter_sampling` arguments, respectively.
+For example:
+
+```{r QS-hq-opts-iters, eval=FALSE}
+x_output <- homeoroq(x, n_iters = 8, iter_sampling = 1e5)
+```
+
+Additionally, the `n_threads` option can be used to run iterations in parallel.
+
+```{r QS-hq-opts-threds, eval=FALSE}
+x_output <- homeoroq(x, n_threads = 8, n_iters = 8, iter_sampling = 1e5)
+```
+
+
+
+
+# Documentation
+
+More usage examples can be found in the following vignettes:
+
+- **Case Studies** (`casestudies`): Step-by-step tutorials for analyzing real RNA-Seq datasets using the `r Biocpkg("hespresso")` package.
+- **Simulation Evaluation** (`sim`): Guides for generating artificial read count data and evaluating the performance of HOBIT and related methods.
+
+To list all available vignettes included in the `r Biocpkg("hespresso")` package,
+run as below.
+
+```{r QS-show-vignettes}
+browseVignettes("hespresso")
+```
+
+To open a specific vignette directly,
+use the `vignette()` function with the corresponding vignette code.
+
+```{r QS-show-vignette-with-code}
+vignette("casestudies", package = "hespresso")
+```
+
+
+# Citations
+
+If you use HOBIT, please cite:
+
+- Sun J, Sese J, and Shimizu KK. A moderated statistical test for detecting shifts in homeolog expression ratios in allopolyploids. bioRxiv 2025;2025.07.01.660977. [10.1101/2025.07.01.660977](https://doi.org/10.1101/2025.07.01.660977)
+
+
+
+If you use HomeoRoq, please cite:
+
+- Akama S, Shimizu-Inatsugi R, Shimizu KK, Sese J. Genome-wide quantification of homeolog expression ratio revealed nonstochastic gene regulation in synthetic allopolyploid Arabidopsis. Nucleic Acids Res. 2014;42(6):e46. [10.1093/nar/gkt1376](https://doi.org/10.1093/nar/gkt1376)
+
+
+# Session Information
+
+```{r QS-sessionInfo}
+sessionInfo()
+```
+
+
+
+# References
+
+
