@@ -17,7 +17,7 @@ to retrieve. Valid options include \code{"mu"} (true means),
 and \code{"params_population"} (population-level values).}
 }
 \value{
-A list of \linkS4class{DataFrame} objects
+A list of data.frame objects
 containing the requested parameter values.
 }
 \description{

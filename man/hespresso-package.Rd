@@ -4,13 +4,13 @@
 \name{hespresso-package}
 \alias{hespresso}
 \alias{hespresso-package}
-\title{hespresso: Statistical Test for Detecting Shifts in Homeolog Expression Ratios in Allopolyploids}
+\title{hespresso: Methods for Detecting Shifts in Homeolog Expression Ratios in Allopolyploids}
 \description{
-hespresso blends homeolog expression with espresso, capturing the essence of power, energy, and focus in homeolog expression analysis. It provides statistical tests to identify homeologs with differential expression ratios among subgenomes in allopolyploid species across diverse conditions, using RNA-Seq read count data. Take a sip of hespresso, and start your analysis strong!
+hespresso blends homeolog expression with espresso, capturing the essence of power, energy, and focus in homeolog expression analysis. It provides statistical tests for detecting shifts in homeolog expression ratios among subgenomes of allopolyploid species across diverse conditions, using RNA-Seq read count data. Take a sip of hespresso, and start your analysis strong!
 }
 \details{
 For a comprehensive introduction to the package,
-including a quick start and detailed examples, see the package vignettes.
+including a quick start and case studies, see the package vignettes.
 }
 \examples{
 browseVignettes("hespresso")

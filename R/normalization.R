@@ -11,8 +11,7 @@
 #' @param x An \linkS4class{ExpMX} class object.
 #' @param method Character. Specifies the normalization method to use.  
 #'          Supported methods are
-#'          `'tmm'` (TMM: trimmed mean of M-values; used by \pkg{edgeR}),
-#'          `'med'` (median ratio method; used by \pkg{DESeq2}),
+#'          `'tmm'` (TMM: trimmed mean of M-values; used by \pkg{edgeR})
 #'          and `'cpm'` (CPM: counts per million).
 #'          Note that CPM is generally used for visualizations and
 #'          is **NOT RECOMMENDED** for statistical analysis,
@@ -39,8 +38,7 @@ norm_counts <- function(x, method = c('tmm', 'med', 'cpm'), round = FALSE) {
 
     gexp_norm <- switch(method,
         'cpm' = .norm_cpm(gexp),
-        'tmm' = .norm_tmm(gexp),
-        'med' = .norm_med(gexp, x@exp_design$group)
+        'tmm' = .norm_tmm(gexp)
     )
     for (i in seq_along(x@data)) {
         hexp <- gexp_norm * her[[i]]
@@ -58,7 +56,7 @@ norm_counts <- function(x, method = c('tmm', 'med', 'cpm'), round = FALSE) {
 }
 
 
-#' @importFrom edgeR DGEList normLibSizes cpm
+#' @importFrom edgeR DGEList normLibSizes
 .norm_tmm <- function(gexp) {
     y <- DGEList(counts = gexp)
     y <- normLibSizes(y)
@@ -67,19 +65,14 @@ norm_counts <- function(x, method = c('tmm', 'med', 'cpm'), round = FALSE) {
 }
 
 
-#' @importFrom DESeq2 DESeqDataSetFromMatrix estimateSizeFactors counts
-.norm_med <- function(gexp, group) {
-    y <- suppressMessages(DESeqDataSetFromMatrix(
-                                countData = gexp,
-                                colData = data.frame(condition = group),
-                                design = ~ condition))
-    y <- estimateSizeFactors(y)
-    counts(y, normalized = TRUE)
-}
-
-
-
-
-
-
+## @importFrom DESeq2 DESeqDataSetFromMatrix estimateSizeFactors counts
+## .norm_med <- function(gexp, group) {
+##     gexp_norm <- NULL
+##     y <- suppressMessages(DESeq2::DESeqDataSetFromMatrix(
+##                               countData = gexp,
+##                               colData = data.frame(condition = group),
+##                               design = ~ condition))
+##     y <- DESeq2::estimateSizeFactors(y)
+##     DESeq2::counts(y, normalized = TRUE)
+## }
 

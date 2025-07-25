@@ -340,7 +340,7 @@
 #'      function in the \pkg{cmdstanr} package
 #'      (e.g., `chains`, `iter_warmup`, `iter_sampling`, `thin`).
 #'
-#' @return A \code{\link[S4Vectors]{DataFrame}} with one row per homeolog,
+#' @return A data.frame with one row per homeolog,
 #'      containing the following columns:
 #'      \itemize{
 #'          \item `pvalue`: p-value from the LRT using normalized likelihoods.
@@ -365,18 +365,17 @@
 #' x_output <- hobit(x)
 #' 
 #' # MCMC sampling options
-#' x_output <- hobit(x, chains = 4, iter_warmup = 100, iter_sampling = 100)
+#' x_output <- hobit(x, chains = 2, iter_warmup = 100, iter_sampling = 100)
 #' 
 #' # parallel processing
-#' x_output <- hobit(x, n_threads = 1, parallel_chains = 4, iter_warmup = 100, iter_sampling = 100)
-#' x_output <- hobit(x, n_threads = 4, parallel_chains = 1, iter_warmup = 100, iter_sampling = 100)
+#' x_output <- hobit(x, n_threads = 1, parallel_chains = 8, iter_warmup = 100, iter_sampling = 100)
+#' x_output <- hobit(x, n_threads = 8, parallel_chains = 1, iter_warmup = 100, iter_sampling = 100)
 #' 
 #' @importFrom stats p.adjust
 #' @importFrom progressr progressor with_progress
 #' @importFrom parallel makeCluster clusterExport clusterEvalQ stopCluster
 #' @importFrom doParallel registerDoParallel
 #' @importFrom foreach foreach %dopar%
-#' @importFrom S4Vectors DataFrame
 #' @importFrom cmdstanr cmdstan_model 
 #' @export
 hobit <- function(x,
@@ -442,11 +441,11 @@ hobit <- function(x,
     stats$qvalue <- p.adjust(stats$pvalue, method = 'BH')
     stats$raw_qvalue <- p.adjust(stats$raw_pvalue, method = 'BH')
     
-    DataFrame(gene = x@gene_names,
-              stats[, c('pvalue', 'qvalue', 'raw_pvalue', 'raw_qvalue',
-                        'Dmax', 'ORmax')],
-              stats[, grep('^theta__', colnames(stats))],
-              stats[, grep('^theta0__', colnames(stats))],
-              stats[, c('logLik_H1', 'logLik_H0')])
+    data.frame(gene = x@gene_names,
+               stats[, c('pvalue', 'qvalue', 'raw_pvalue', 'raw_qvalue',
+                         'Dmax', 'ORmax')],
+               stats[, grep('^theta__', colnames(stats))],
+               stats[, grep('^theta0__', colnames(stats))],
+               stats[, c('logLik_H1', 'logLik_H0')])
 }
 

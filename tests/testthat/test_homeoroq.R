@@ -6,7 +6,7 @@ test_that('Test HomeoRoq.', {
 })
 
 test_that('Test HomeoRoq with multiple threads.', {
-    x_output <- homeoroq(x, 4, 100, n_threads = 4)
+    x_output <- homeoroq(x, 4, 100, n_threads = 8)
 })
 
 test_that('Test HomeoRoq with unexpected conditions.', {

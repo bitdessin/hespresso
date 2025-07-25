@@ -569,7 +569,7 @@ def_sigShift <- function(x,
 #'      `"params"` (sampled means and dispersions),
 #'      and `"params_population"` (population-level values).
 #'
-#' @return A list of \linkS4class{DataFrame} objects
+#' @return A list of data.frame objects
 #'      containing the requested parameter values.
 #'
 #' @examples
@@ -580,7 +580,6 @@ def_sigShift <- function(x,
 #' @seealso [sim_homeolog_counts()], \linkS4class{ExpMX},
 #'     \linkS4class{SimParams}
 #' 
-#' @importFrom S4Vectors DataFrame
 #' @export
 get_sim_params <- function(x, param = NULL) {
     if (is.null(param)) return(NULL)
@@ -596,7 +595,7 @@ get_sim_params <- function(x, param = NULL) {
     }
     
     for (i in seq_along(output)) {
-        output[[i]] <- DataFrame(output[[i]])
+        output[[i]] <- data.frame(output[[i]])
     }
     
     output

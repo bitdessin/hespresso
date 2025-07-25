@@ -59,7 +59,7 @@ function in the \pkg{cmdstanr} package
 (e.g., \code{chains}, \code{iter_warmup}, \code{iter_sampling}, \code{thin}).}
 }
 \value{
-A \code{\link[S4Vectors]{DataFrame}} with one row per homeolog,
+A data.frame with one row per homeolog,
 containing the following columns:
 \itemize{
 \item \code{pvalue}: p-value from the LRT using normalized likelihoods.
@@ -112,13 +112,16 @@ x <- sim_homeolog_counts(10)
 x_output <- hobit(x)
 
 # MCMC sampling options
-x_output <- hobit(x, chains = 4, iter_warmup = 100, iter_sampling = 100)
+x_output <- hobit(x, chains = 2, iter_warmup = 100, iter_sampling = 100)
 
 # parallel processing
-x_output <- hobit(x, n_threads = 1, parallel_chains = 4, iter_warmup = 100, iter_sampling = 100)
-x_output <- hobit(x, n_threads = 4, parallel_chains = 1, iter_warmup = 100, iter_sampling = 100)
+x_output <- hobit(x, n_threads = 1, parallel_chains = 8, iter_warmup = 100, iter_sampling = 100)
+x_output <- hobit(x, n_threads = 8, parallel_chains = 1, iter_warmup = 100, iter_sampling = 100)
 
 }
 \references{
-HOBIT.
+Sun J, Sese J, and Shimizu KK.
+A moderated statistical test for detecting shifts in homeolog expression
+ratios in allopolyploids.
+bioRxiv 2025;2025.07.01.660977. \doi{10.1101/2025.07.01.660977}
 }

@@ -76,6 +76,11 @@ setMethod(
 #' Extract a subset of ExpMX Object
 #'
 #' Extracts a subset of homeologs or replicates from an `ExpMX` object.
+#' 
+#' @name [-method
+#' @docType methods
+#' @rdname subset-ExpMX
+#' @aliases [,ExpMX-method
 #'
 #' @param x An \linkS4class{ExpMX} class object.
 #' @param i A logical expression or an integer vector specifying which gene

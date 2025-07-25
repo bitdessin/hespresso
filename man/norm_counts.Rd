@@ -11,8 +11,7 @@ norm_counts(x, method = c("tmm", "med", "cpm"), round = FALSE)
 
 \item{method}{Character. Specifies the normalization method to use.
 Supported methods are
-\code{'tmm'} (TMM: trimmed mean of M-values; used by \pkg{edgeR}),
-\code{'med'} (median ratio method; used by \pkg{DESeq2}),
+\code{'tmm'} (TMM: trimmed mean of M-values; used by \pkg{edgeR})
 and \code{'cpm'} (CPM: counts per million).
 Note that CPM is generally used for visualizations and
 is \strong{NOT RECOMMENDED} for statistical analysis,

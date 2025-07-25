@@ -290,7 +290,7 @@
 #'      which can be set at the beginning of an R session as
 #'      `options(mc.cores = 4)`. If `'mc.cores'` is not set, the default is 1.
 #'
-#' @return A \code{\link[S4Vectors]{DataFrame}} with one row per homeolog,
+#' @return A data.frame with one row per homeolog,
 #'      containing the following columns:
 #'      \itemize{
 #'          \item `pvalue`: Raw p-value from the statistical test.
@@ -310,11 +310,10 @@
 #' x_output <- homeoroq(x)
 #' 
 #' # sampling options
-#' x_output <- homeoroq(x, chains = 2, iter_sampling = 1000)
+#' x_output <- homeoroq(x, chains = 4, iter_sampling = 1000, n_threads = 4)
 #' 
 #' @importFrom stats p.adjust
 #' @importFrom locfit locfit lp
-#' @importFrom S4Vectors DataFrame
 #' @importFrom progressr progressor with_progress
 #' @importFrom parallel makeCluster clusterExport clusterEvalQ stopCluster
 #' @importFrom doParallel registerDoParallel
@@ -356,8 +355,8 @@ homeoroq <- function(x,
     }
     
     pvalues <- rowMeans(pvalues)
-    DataFrame(gene = x@gene_names,
-              pvalue = pvalues,
-              qvalue = p.adjust(pvalues, 'BH'),
-              .hq.calc_obscounts_stats(x))
+    data.frame(gene = x@gene_names,
+               pvalue = pvalues,
+               qvalue = p.adjust(pvalues, 'BH'),
+               .hq.calc_obscounts_stats(x))
 }

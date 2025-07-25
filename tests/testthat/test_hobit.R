@@ -11,10 +11,10 @@ test_that('Test HOBIT for 4x with multiple threads.', {
     x11 <- hobit(x2, n_threads = 1, parallel_chains = 1,
                  chains = 4, iter_warmup = 1000, iter_sampling = 2000)
     
-    x14 <- hobit(x2, n_threads = 1, parallel_chains = 4,
+    x14 <- hobit(x2, n_threads = 1, parallel_chains = 8,
                  chains = 4, iter_warmup = 1000, iter_sampling = 2000)
     
-    x41 <- hobit(x2, n_threads = 4, parallel_chains = 1,
+    x41 <- hobit(x2, n_threads = 8, parallel_chains = 1,
                  chains = 4, iter_warmup = 1000, iter_sampling = 2000)
     
     d1 <- x11$pvalue - x14$pvalue

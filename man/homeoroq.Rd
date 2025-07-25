@@ -28,7 +28,7 @@ which can be set at the beginning of an R session as
 \code{options(mc.cores = 4)}. If \code{'mc.cores'} is not set, the default is 1.}
 }
 \value{
-A \code{\link[S4Vectors]{DataFrame}} with one row per homeolog,
+A data.frame with one row per homeolog,
 containing the following columns:
 \itemize{
 \item \code{pvalue}: Raw p-value from the statistical test.
@@ -64,7 +64,7 @@ x <- sim_homeolog_counts(100)
 x_output <- homeoroq(x)
 
 # sampling options
-x_output <- homeoroq(x, chains = 2, iter_sampling = 1000)
+x_output <- homeoroq(x, chains = 4, iter_sampling = 1000, n_threads = 4)
 
 }
 \references{

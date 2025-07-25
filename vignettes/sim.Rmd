@@ -6,7 +6,7 @@ author:
       affiliation: |
         Research Center for Agricultural Information Technology,
         National Agriculture and Food Research Organization, Japan
-output: 
+output:
     BiocStyle::html_document:
         highlight: pygments
         toc: true
@@ -21,7 +21,7 @@ vignette: |
     %\VignetteEngine{knitr::rmarkdown}
 abstract: |
     Simulation studies offer a powerful approach for evaluating method performance
-    under controlled conditions. The *hespresso* package includes a suite of functions
+    under controlled conditions. The _hespresso_ package includes a suite of functions
     to generate artificial datasets that simulate read counts from allopolyploid species.
     These functions enable comprehensive assessment of HOBIT and related methods across
     a range of experimental scenarios.
@@ -47,7 +47,7 @@ set.seed(1)
 
 # Simulating Allotetraploid Data
 
-The `r Biocpkg("hespresso")` package provides functions
+The hespresso package provides functions
 to simulate artificial read counts for allotetraploid and allohexaploid species.
 By default, the simulation generates read counts for
 an allotetraploid with 10,000 homeologs across two conditions,
@@ -80,8 +80,8 @@ For example, to get means used for sampling read counts, run as follows.
 param_mu <- get_sim_params(x, "mu")
 ```
 
-The output is a list of DataFrame objects, with each element corresponding to a condition group.
-Each DataFrame contains the true mean expression values used for sampling,
+The output is a list of data.frame objects, with each element corresponding to a condition group.
+Each data.frame contains the true mean expression values used for sampling,
 where the columns represent individual subgenomes.
 These ground-truth mean values can be used to calculate the true
 **homeolog expression ratios** (**HERs**) for each condition.
@@ -297,7 +297,7 @@ We then calculate precision, recall, and the F1 score
 by comparing the predicted RSHs against the ground-truth RSHs,
 which are defined using the `def_sigShift()` function.
 To compute the AUC, we use the *p*-values from the `hobit()` output
-and input them into the `auc()` and `roc()` functions provided by the `r Biocpkg("pROC")` package.
+and input them into the `auc()` and `roc()` functions provided by the pROC package.
 
 ```{r SIM-eval-calcmetrics}
 library(pROC)

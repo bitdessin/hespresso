@@ -6,9 +6,9 @@ author:
       affiliation: |
         Research Center for Agricultural Information Technology,
         National Agriculture and Food Research Organization, Japan
-output: 
+output:
     BiocStyle::html_document:
-        highlight: tango
+        highlight: pygments
         toc: true
         toc_depth: 1
 editor_options:
@@ -166,11 +166,11 @@ use the `plot_HER()` function. This function creates a scatter plot of HERs
 calculated from the wet and dry groups. By default, HER is defined as the
 expression ratio of the first subgenome (i.e., the subgenome derived from
 *C. hirsuta*) relative to the total expression across all subgenomes.
-In the example below, homeologs with *p*-values less than 0.01 are highlighted.
+In the example below, homeologs with *p*-values less than 0.05 are highlighted.
 
 
 ```{r CS-cflex-viz-highlight, fig.cap="Changes in Homeolog Expression Ratios Between Wet and Dry Habitats. Each point represents the homeolog expression ratio in wet (x-axis) and dry (y-axis) habitats. Orange points indicate homeologs with significant changes in expression ratios between the two conditions, as detected by HOBIT, while gray points represent those without significant changes."}
-is_sig <- ifelse(x_output$pvalue < 0.01, "p<0.01", "p>=0.01")
+is_sig <- ifelse(x_output$pvalue < 0.05, "p<0.05", "p>=0.05")
 plot_HER(x, label = is_sig)
 ```
 
@@ -198,13 +198,13 @@ head(x_homeoroq[order(x_homeoroq$pvalue), ])
 ```
 
 The overlap of RSHs detected by HOBIT and HomeoRoq can be
-visualized using an UpSet plot, implemented in the `r CRANpkg("UpSetR")` package.
+visualized using an UpSet plot, implemented in the UpSetR package.
 
 ```{r CS-cflex-overlaps, fig.cap="Overlap of ratio-shifted Homeologs Detected by HOBIT and HomeoRoq."}
 library("UpSetR")
 sig_homeologs <- list(
-    HOBIT = x_output$gene[x_output$pvalue < 0.01],
-    HomeoRoq = x_homeoroq$gene[x_homeoroq$pvalue < 0.01]
+    HOBIT = x_output$gene[x_output$pvalue < 0.05],
+    HomeoRoq = x_homeoroq$gene[x_homeoroq$pvalue < 0.05]
 )
 
 upset(fromList(sig_homeologs))
@@ -214,9 +214,9 @@ Additionally, RSHs detected by both methods can be visualized using the `plot_HE
 
 ```{r CS-cflex-overlaps-highlight, fig.cap="Comparison of Ratio-Shifted Homeologs Detection by HOBIT and HomeoRoq. Each point represents the homeolog expression ratio in wet (x-axis) and dry (y-axis) habitats. Points labeled with n.s. represent homeologs without significant changes detected by either method, while other points represent ratio-shifted homeologs detected by the corresponding methods."}
 is_sig <- rep("n.s.", length = nrow(x_output))
-is_sig[x_output$pvalue < 0.01] <- "HOBIT"
-is_sig[x_homeoroq$pvalue < 0.01] <- "HomeoRoq"
-is_sig[x_output$pvalue < 0.01 & x_homeoroq$pvalue < 0.01] <- "HOBIT&HomeoRoq"
+is_sig[x_output$pvalue < 0.05] <- "HOBIT"
+is_sig[x_homeoroq$pvalue < 0.05] <- "HomeoRoq"
+is_sig[x_output$pvalue < 0.05 & x_homeoroq$pvalue < 0.05] <- "HOBIT&HomeoRoq"
 is_sig <- factor(is_sig, levels = c("n.s.", "HOBIT", "HomeoRoq", "HOBIT&HomeoRoq"))
 plot_HER(x, label = is_sig)
 ```
