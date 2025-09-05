@@ -1,0 +1,15 @@
+^\.git$
+^\.gitignore$
+^\.gitattributes$
+^\.github$
+
+^\.Rhistory$
+^.*\.Rproj$
+^\.Rproj\.user$
+
+docs
+
+R/dev_func.R
+
+.DS_Store
+^LICENSE\.md$
