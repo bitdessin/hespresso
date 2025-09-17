@@ -9,7 +9,8 @@ newExpMX(x, group, mapping_table)
 \arguments{
 \item{x}{A matrix or data frame of gene expression data,
 where each column corresponds to a sample
-and each row corresponds to a gene.}
+and each row corresponds to a gene.
+The row names should be gene names which match those in the \code{mapping_table}.}
 
 \item{group}{A vector or a data frame describing the experimental design.
 If a data frame, it must include a column named \code{group}

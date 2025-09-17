@@ -134,7 +134,7 @@
 # Converts a list of homeolog expression matrices into a list containing  
 # homeolog expression data, prior parameters,
 # and other information for modeling. 
-.hb.format_data <- function(x, use_prior, eps, no_replicate) {
+.hb.format_data <- function(x, use_Dirichlet, eps, no_replicate) {
     x_list <- vector('list', length = nrow(x@data[[1]]))
     
     exp_group <- x@exp_design$group
@@ -171,7 +171,7 @@
             HOMEOLOG_EXP_PHI = vapply(disp$homeolog, function(x, i) {
                 x[i, ]}, numeric(ncol(disp$homeolog[[1]])), i),
             
-            USE_PRIOR = ifelse(use_prior, 1, 0),
+            USE_DIRICHLET = ifelse(use_Dirichlet, 1, 0),
             EPS = eps,
             .META = list(condition_names = group_names,
                          subgenome_names = names(x@data),
@@ -307,7 +307,7 @@
 #'
 #' @param x An \linkS4class{ExpMX} class object containing normalized homeolog
 #'      expression data (i.e., RNA-Seq read counts).
-#' @param use_prior Logical. Whether to apply a Dirichlet prior distribution
+#' @param use_Dirichlet Logical. Whether to apply a Dirichlet prior distribution
 #'      for sampling HERs.
 #' @param no_replicate Logical. Whether to treat all replicates as belonging to
 #'      a single condition when estimating dispersion. Set to `TRUE` if the
@@ -379,7 +379,7 @@
 #' @importFrom cmdstanr cmdstan_model 
 #' @export
 hobit <- function(x,
-                  use_prior = FALSE,
+                  use_Dirichlet = FALSE,
                   no_replicate = FALSE,
                   eps = 1e-3,
                   dist = c('NB', 'ZINB'),
@@ -392,7 +392,7 @@ hobit <- function(x,
     input_params$parallel_chains <- parallel_chains
     
     # format data
-    data <- .hb.format_data(x, use_prior, eps, no_replicate)
+    data <- .hb.format_data(x, use_Dirichlet, eps, no_replicate)
     
     # STAN
     stan_code_fpath <- system.file(package = 'hespresso', 'extdata',

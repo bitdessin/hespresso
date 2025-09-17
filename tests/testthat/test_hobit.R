@@ -30,7 +30,7 @@ test_that('Test HOBIT for 6x.', {
 
 test_that('Test HOBIT for 4x using ZINB.', {
     x_output <- hobit(x2,
-                      use_prior = TRUE,
+                      use_Dirichlet = TRUE,
                       dist = 'ZINB',
                       chains = 1, iter_warmup = 100, iter_sampling = 100)
 })

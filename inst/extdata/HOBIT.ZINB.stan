@@ -1,5 +1,5 @@
 data {
-    int USE_PRIOR;
+    int USE_DIRICHLET;
     real EPS;
     real GENE_EXP_UPPER;
 
@@ -35,7 +35,7 @@ transformed parameters {
 }
 
 model {
-    if (USE_PRIOR == 1) {
+    if (USE_DIRICHLET == 1) {
         for (c in 1:N_CONDITIONS) {
             theta1[c] ~ dirichlet(PRIOR_ALPHA1[c]);
         }

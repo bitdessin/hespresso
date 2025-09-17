@@ -1,6 +1,6 @@
 Package: hespresso
 Title: Methods for Detecting Shifts in Homeolog Expression Ratios in Allopolyploids
-Version: 0.99.1
+Version: 1.0.0
 Authors@R: 
     c(person("Jianqiang", "Sun",
              email = "sun@bitdessin.dev",
@@ -16,8 +16,7 @@ Description:
 Depends: R (>= 4.5)
 Imports: stats, utils, methods, locfit, parallel, foreach, doParallel,
         progressr, ggplot2, edgeR, cmdstanr
-Suggests: knitr, rmarkdown, testthat, UpSetR, gridExtra, BiocStyle, pROC
-VignetteBuilder: knitr
+Suggests: testthat, gridExtra, UpSetR, pROC
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)

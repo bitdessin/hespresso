@@ -6,7 +6,7 @@
 \usage{
 hobit(
   x,
-  use_prior = FALSE,
+  use_Dirichlet = FALSE,
   no_replicate = FALSE,
   eps = 0.001,
   dist = c("NB", "ZINB"),
@@ -19,7 +19,7 @@ hobit(
 \item{x}{An \linkS4class{ExpMX} class object containing normalized homeolog
 expression data (i.e., RNA-Seq read counts).}
 
-\item{use_prior}{Logical. Whether to apply a Dirichlet prior distribution
+\item{use_Dirichlet}{Logical. Whether to apply a Dirichlet prior distribution
 for sampling HERs.}
 
 \item{no_replicate}{Logical. Whether to treat all replicates as belonging to
