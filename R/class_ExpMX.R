@@ -193,6 +193,7 @@ combine_hexp <-function(x, subgenomes, name_to = NULL) {
 #' @param x A matrix or data frame of gene expression data,
 #'      where each column corresponds to a sample
 #'      and each row corresponds to a gene.
+#'      The row names should be gene names which match those in the `mapping_table`.
 #' @param group A vector or a data frame describing the experimental design.  
 #'      If a data frame, it must include a column named `group`
 #'      indicating sample groupings.
@@ -213,22 +214,37 @@ combine_hexp <-function(x, subgenomes, name_to = NULL) {
 #' @seealso \linkS4class{ExpMX}
 #' @export
 newExpMX <- function(x, group, mapping_table) {
-    if (is.vector(group))
-        group <- data.frame(group  = group)
+    if (is.vector(group)) group <- data.frame(group  = group)
     
     n_subgenomes <- ncol(mapping_table)
     x_counts <- vector('list', length = n_subgenomes)
     names(x_counts) <- colnames(mapping_table)
     
+    # remove undef genes
+    undef_genes <- setdiff(rownames(x), unlist(mapping_table))
+    if (length(undef_genes) > 0) {
+        warning(length(undef_genes), ' genes in expression data are not defined in mapping table. They will be ignored. ')
+        warning('Undefined genes: ', paste(head(undef_genes, 10), collapse = ', '), ifelse(length(undef_genes) > 10, ', ...', ''), '\n')
+        x <- x[setdiff(rownames(x), undef_genes), , drop = FALSE]
+    }
+    
+    # find homeolog tuples in expression data
+    valid_homeologs <- NULL
+    for ( i in seq_len(n_subgenomes)) {
+        ids <- seq(1, nrow(mapping_table))
+        valid_homeologs <- c(valid_homeologs, ids[(mapping_table[, i] %in% rownames(x))])
+    }
+    valid_homeologs <- sort(unique(valid_homeologs))
+    
+    # format
     for (i in seq_len(n_subgenomes)) {
-        x_counts[[i]] <- as.matrix(x[mapping_table[, i], ])
+        x_counts[[i]] <- as.matrix(x[mapping_table[valid_homeologs, i], ])
         rownames(x_counts[[i]]) <- NULL
         colnames(x_counts[[i]]) <- NULL
     }
-    
     new("ExpMX",
         data = x_counts,
-        gene_names = mapping_table[, 1],
+        gene_names = mapping_table[valid_homeologs, 1],
         exp_design = group,
         meta = NULL)
 }
