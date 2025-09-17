@@ -1,0 +1,188 @@
+## Allohexaploid *C. flexuosa*
+
+```{r tt-cflex-setup, include=FALSE}
+source("../_config.R")
+```
+
+### Introduction
+
+*Cardamine flexuosa* (2*n* = 4*x* = 32, HHAA), wavy bittercress,
+is an allopolyploid species that originated from two diploid progenitors,
+*Cardamine hirsuta* (2*n* = 2*x* = 16, HH) and *Cardamine amara* (2*n* = 2*x* = 16, AA) [@ref_cflex_origin].
+While *C. hirsuta* is typically adapted to dry habitats such as roadsides,
+*C. amara* inhabits wet environments such as riversides or running streams.
+The allopolyploid *C. flexuosa* thrives across a wide range of ecological habitats.
+
+Akiyama et al. conducted an RNA-Seq experiment using leaf samples of *C. flexuosa*
+collected from wet and dry habitats across three different days [@ref_cflex_ecohabitats].
+Each habitat–date combination included two or three biological replicates.
+Homeolog expression levels were quantified using read counts
+processed through the HomeoRoq sorting pipeline [@ref_homeoroq].
+Analysis of homeolog expression ratios revealed that
+a small percentage of homeologs in *C. flexuosa* exhibit shifts
+in expression depending on environmental differences, wet and dry.
+
+### Data Preparation
+
+In this example, we demonstrate how to use HOBIT and HomeoRoq to analyze the *C. flexuosa* dataset.
+To reduce computation time, we focus on samples collected on May 16, 2013,
+and randomly select 1,000 homeolog pairs (`c_flexuosa.0516.mini.txt.gz`).
+Users can, however, analyze the full dataset or samples from other dates.
+These datasets are available in the [data](https://github.com/bitdessin/hespresso/tree/main/docs/data) directory,
+and the same workflow can be applied.
+
+```{r tt-cflex-load-counts}
+gexp <- read.table("../data/c_flexuosa.0516.mini.txt.gz", header = TRUE, sep = "\t", row.names = 1)
+head(gexp)
+group <- c("wet", "wet", "wet", "dry", "dry", "dry")
+```
+
+Next, load the homeolog mapping table,
+which links gene expression values to their corresponding homeologs.
+This table is a tab-separated file in which the first and second columns
+represent gene names from *C. hirsuta* and *C. amara*, respectively.
+
+```{r tt-cflex-load-mappingtable}
+mapping_table <- read.table("../data/c_flexuosa.homeolog.txt.gz", header = TRUE, sep = "\t")
+head(mapping_table)
+```
+
+We then use the `newExpMX()` function
+to organize the gene expression matrix (`gexp`) into a homeolog expression matrix
+using the mapping table (`mapping_table`) and store the result in an `ExpMX` class object.
+
+```{r tt-cflex-create-expmx}
+x <- newExpMX(gexp, group, mapping_table)
+x
+```
+
+Before performing the test,
+we normalize the raw read counts using the TMM method [@ref_tmm]
+to adjust for differences in library size.
+However, if the expression data (`gexp`) has already been normalized (e.g. FPKM),
+this step can be skipped.
+
+```{r tt-cflex-norm-counts}
+x <- norm_counts(x)
+```
+
+To visualize the distributions of homeolog expression ratios,
+use the `plot_HER_distr()` function.
+This function returns a list of histograms, one for each condition,
+showing the distribution of homeolog expression ratios.
+
+```{r tt-cflex-viz-distr}
+distr_plots <- plot_HER_distr(x)
+names(distr_plots)
+```
+
+By default, the expression ratio is calculated as the proportion contributed
+by the first subgenome relative to all subgenomes.
+In this dataset, the first subgenome is derived from *C. hirsuta*,
+as indicated by the first column in the mapping table (`mapping_table`).
+
+To display the distribution of homeolog expression ratios for each experimental group,
+run the following code.
+
+```{r tt-cflex-viz-distr-show, fig.cap="Distribution of homeolog expression ratios in _C. flexuosa_ under wet and dry habitats."}
+library(ggplot2)
+library(gridExtra)
+
+grid.arrange(distr_plots[["wet"]] + ggtitle("wet"),
+             distr_plots[["dry"]] + ggtitle("dry"),
+             ncol = 2)
+```
+
+After visually inspecting the distributions,
+if no irregularities are observed, users can proceed to apply the statistical test.
+
+
+### HOBIT
+
+HOBIT can be executed using the `hobit()` function, which performs a statistical test
+to detect homeologs with shifts in expression ratios between wet and dry habitats.
+Analyzing 1,000 homeolog pairs with eight threads takes approximately five minutes.
+
+```{r tt-cflex-hobit, results="hide", message=FALSE, warning=FALSE}
+x_output <- hobit(x)
+```
+
+The order of the test output matches that of the input.
+
+```{r tt-cflex-hobit-output}
+head(x_output)
+```
+
+To rank the output in descending order of *p*-values, use the following code.
+
+```{r tt-cflex-hobit-sorted-output}
+head(x_output[order(x_output$pvalue), ])
+```
+
+To visualize homeologs with shifts in expression ratios between wet and dry habitats,
+use the `plot_HER()` function.
+This function generates a scatter plot comparing the expression ratios
+calculated for the wet and dry groups.
+By default, the expression ratio is defined as the proportion contributed
+by the first subgenome (i.e., the subgenome derived from *C. hirsuta*)
+relative to the total expression across all subgenomes.
+In the example below, homeologs with *q*-values less than 0.01 are highlighted.
+
+
+```{r tt-cflex-viz-highlight, fig.cap="Changes in homeolog expression ratios between wet (x-axis) and dry (y-axis) habitats. Orange points indicate homeologs with significant shifts detected by HOBIT, while gray points represent homeologs without significant changes."}
+is_sig <- ifelse(x_output$qvalue < 0.01, "q<0.01", "q>=0.01")
+plot_HER(x, label = is_sig)
+```
+
+
+### HomeoRoq
+
+For allopolyploids composed of two subgenomes under two different conditions,
+HomeoRoq is also a suitable option for detecting homeologs with shifts in expression ratios.
+It can be executed using the `homeoroq()` function in the same way as `hobit()`,
+as shown below.
+
+```{r tt-cflex-hq-run, results="hide", message=FALSE, warning=FALSE}
+x_homeoroq <- homeoroq(x)
+```
+
+```{r tt-cflex-hq-output}
+head(x_homeoroq[order(x_homeoroq$pvalue), ])
+```
+
+The overlap of homeologs with shifts in expression ratios
+detected by HOBIT and HomeoRoq can be visualized using an UpSet plot,
+which is implemented in the `r pkg("UpSetR", "cran")` package [@ref_upsetr].
+
+
+```{r tt-cflex-overlaps, fig.cap="Overlap of homeologs with shifted expression ratios detected by HOBIT and HomeoRoq."}
+library("UpSetR")
+sig_homeologs <- list(
+    HOBIT = x_output$gene[x_output$qvalue < 0.01],
+    HomeoRoq = x_homeoroq$gene[x_homeoroq$qvalue < 0.01]
+)
+
+upset(fromList(sig_homeologs))
+```
+
+Additionally, homeologs with shifts in expression ratios detected by both methods
+can be visualized using the `plot_HER()` function.
+
+
+```{r tt-cflex-overlaps-highlight, fig.cap="Comparison of homeologs with changes in expression ratios detected by HOBIT and HomeoRoq. Each point represents a homeolog expression ratio in wet (x-axis) and dry (y-axis) conditions. Points labeled as n.s. indicate homeologs without significant changes detected by either method; other points represent homeologs identified as having significant changes by the respective method."}
+is_sig <- rep("n.s.", length = nrow(x_output))
+is_sig[x_output$qvalue < 0.01] <- "HOBIT"
+is_sig[x_homeoroq$qvalue < 0.01] <- "HomeoRoq"
+is_sig[x_output$qvalue < 0.01 & x_homeoroq$qvalue < 0.01] <- "HOBIT&HomeoRoq"
+is_sig <- factor(is_sig, levels = c("n.s.", "HOBIT", "HomeoRoq", "HOBIT&HomeoRoq"))
+plot_HER(x, label = is_sig)
+```
+
+
+### Analysis Environment
+
+```{r tt-cflex-sessioninfo}
+sessionInfo()
+```
+
+

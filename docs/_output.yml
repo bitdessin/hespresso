@@ -1,0 +1,10 @@
+bookdown::gitbook:
+  split_by: section
+  css: "_style.css"
+  config:
+    toc:
+      collapse: subsection
+    number_sections: yes
+    biblio-style: apalike
+    link-citations: true
+

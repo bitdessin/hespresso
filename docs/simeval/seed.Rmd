@@ -1,0 +1,24 @@
+## Custom Data Simulation
+
+```{r sim-custom-setup, include=FALSE}
+source("../_config.R")
+```
+
+Instead of relying on the default datasets based on *C. flexuosa* or wheat,
+users can provide their own expression matrix to calculate the mean and dispersion parameters for simulation.
+The matrix should have genes as rows and samples (biological replicates) as columns,
+with each cell containing a normalized read count.
+
+Below is an example showing
+how to load a custom matrix and use it as a template for simulation.
+
+```{r sim-custom-seed}
+expmx <- read.table("../data/seed.c_flexuosa.txt.gz")
+head(expmx)
+x <- sim_homeolog_counts(seed_expmx = expmx)
+x
+```
+
+This approach enables users to generate simulated datasets
+that closely resemble their own study system,
+facilitating realistic evaluation of HOBIT or related methods.

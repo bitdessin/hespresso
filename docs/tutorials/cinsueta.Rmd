@@ -1,0 +1,105 @@
+## Allotriploid *C. insueta*
+
+```{r tt-cins-setup, include=FALSE}
+source("../_config.R")
+```
+
+### Introduction
+
+Allotriploid *Cardamine insueta* (2n = 3x = 24, RRA) serves as an example of an uneven subgenome composition.
+Two of its subgenomes are derived from *Cardamine rivularis* (2n = 2x = 16, RR),
+a species inhabiting grassy areas away from riversides,
+while the third subgenome comes from *Cardamine amara* (2n = 2x = 16, AA),
+a species typically found on riversides or in streams [@ref_cins_origin_1; @ref_cins_origin_2].
+RNA-Seq studies on *C. insueta* leaflets floating on water suggested that
+*C. insueta* shifts homeolog expression ratios over time following submergence [@ref_cins_submergestress].
+
+### Data Preparation
+
+Here, we demonstrate how to detect homeologs with changing expression ratios across time points using HOBIT,
+similar to an ANOVA approach.
+We use a sample dataset containing 1,000 homeologs (`c_insueta.mini.txt.gz`) randomly selected from the original experiment,
+although the full dataset is available in the [data](https://github.com/bitdessin/hespresso/tree/main/docs) directory
+for users who wish to analyze it.
+This data span nine time points following leaf submergence and can be loaded using the following code.
+
+```{r tt-cins-load-counts}
+gexp <- read.table("../data/c_insueta.mini.txt.gz", header = TRUE, sep = "\t", row.names = 1)
+head(gexp)
+group <- c("T00", "T02", "T04", "T08", "T12", "T24", "T48", "T72", "T96")
+```
+
+Next, load the homeolog mapping table,
+which links gene expression values to their corresponding homeolog pairs.
+This file is tab-separated,
+with the first and second columns representing genes from *C. rivularis* and *C. amara*, respectively.
+
+```{r tt-cins-load-mappingtable}
+mapping_table <- read.table("../data/c_insueta.homeolog.txt.gz", header = TRUE, sep = "\t")
+head(mapping_table)
+```
+
+Use the `newExpMX()` function
+to create a homeolog expression matrix from the gene expression data (`gexp`)
+and mapping table (`mapping_table`).
+The result is stored as an `ExpMX` class object.
+
+```{r tt-cins-create-expmx}
+x <- newExpMX(gexp, group, mapping_table)
+x
+```
+
+Normalize the read counts using the TMM method [@ref_tmm],
+since the data has not been normalized.
+
+```{r tt-cins-norm-counts}
+x <- norm_counts(x)
+```
+
+Users can visualize the distribution of homeolog expression ratios using the `plot_HER_distr()` function.
+By default, the expression ratio is calculated as
+the proportion contributed by the first subgenome relative to all subgenomes,
+where the first subgenome corresponds to *C. rivularis*,
+as listed in the first column of the mapping table (`mapping_table`).
+The `plot_HER_distr()` function generates a histogram for each time point.
+
+```{r tt-cins-viz-HER-distr, fig.cap="Distribution of homeolog expression ratios in _C. insueta_ across nine time points following leaf submergence in water."}
+distr_plots <- plot_HER_distr(x)
+
+library(ggplot2)
+library(gridExtra)
+distr_plots <- lapply(seq_along(distr_plots), function(p) {
+    distr_plots[[p]] + ggtitle(names(distr_plots)[p])
+})
+grid.arrange(grobs = distr_plots, ncol = 3)
+```
+
+These visualizations indicate that most homeologs in *C. insueta* are expressed
+at a 2:1 ratio between the *C. rivularis* and *C. amara* subgenomes,
+as shown by histogram peaks centered around two-thirds.
+
+### Statistical Test
+
+Next, apply the `hobit()` function
+to detect homeologs with differential expression ratios across the nine time points following leaf submergence.
+Since this dataset contains only one replicate per condition,
+set `no_replicate = TRUE` to avoid errors arising from dispersion estimation,
+which requires multiple replicates.
+
+```{r tt-cins-hobit, results="hide", message=FALSE, warning=FALSE}
+x_output <- hobit(x, no_replicate = TRUE)
+```
+
+The test takes approximately five minutes to analyze 1,000 homeolog pairs using eight threads,
+although runtime may vary depending on hardware performance.
+
+```{r tt-cins-hobit-output}
+head(x_output)
+```
+
+
+### Analysis Environment
+
+```{r tt-cins-sessioninfo}
+sessionInfo()
+```

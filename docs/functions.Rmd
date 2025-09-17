@@ -1,0 +1,16 @@
+# Functions
+
+The `r pkg("hespresso")` package is designed
+to detect homeologs with shifted expression ratios across diverse conditions
+using RNA-Seq data from allopolyploids.
+It provides two methods, HOBIT and HomeoRoq,
+which are implemented as the functions `hobit()` and `homeoroq()`, respectively.
+
+
+```{r fc-sec-hobit, child='functions/hobit.Rmd'}
+```
+
+
+```{r fc-sec-homeoroq, child='functions/homeoroq.Rmd'}
+```
+

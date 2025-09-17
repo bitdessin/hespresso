@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+<head>
+
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>5.2 Simulating Allohexaploid Data | hespresso ☕</title>
+  <meta name="description" content="5.2 Simulating Allohexaploid Data | hespresso ☕" />
+  <meta name="generator" content="bookdown 0.44 and GitBook 2.6.7" />
+
+  <meta property="og:title" content="5.2 Simulating Allohexaploid Data | hespresso ☕" />
+  <meta property="og:type" content="book" />
+  
+  
+  
+
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="5.2 Simulating Allohexaploid Data | hespresso ☕" />
+  
+  
+  
+
+
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  
+  
+<link rel="prev" href="simulating-allotetraploid-data.html"/>
+<link rel="next" href="custom-data-simulation.html"/>
+<script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
+<link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-clipboard.css" rel="stylesheet" />
+
+
+
+
+
+
+
+
+<link href="libs/anchor-sections-1.1.0/anchor-sections.css" rel="stylesheet" />
+<link href="libs/anchor-sections-1.1.0/anchor-sections-hash.css" rel="stylesheet" />
+<script src="libs/anchor-sections-1.1.0/anchor-sections.js"></script>
+
+
+<style type="text/css">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+<style type="text/css">
+  
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+</style>
+<style type="text/css">
+/* Used with Pandoc 2.11+ new --citeproc when CSL is used */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}
+</style>
+
+<link rel="stylesheet" href="_style.css" type="text/css" />
+</head>
+
+<body>
+
+
+
+  <div class="book without-animation with-summary font-size-2 font-family-1" data-basepath=".">
+
+    <div class="book-summary">
+      <nav role="navigation">
+
+<ul class="summary">
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i>hespresso</a></li>
+<li class="chapter" data-level="1" data-path="installation.html"><a href="installation.html"><i class="fa fa-check"></i><b>1</b> Installation</a></li>
+<li class="chapter" data-level="2" data-path="quick-start.html"><a href="quick-start.html"><i class="fa fa-check"></i><b>2</b> Quick Start</a></li>
+<li class="chapter" data-level="3" data-path="tutorials.html"><a href="tutorials.html"><i class="fa fa-check"></i><b>3</b> Tutorials</a>
+<ul>
+<li class="chapter" data-level="3.1" data-path="allohexaploid-c.-flexuosa.html"><a href="allohexaploid-c.-flexuosa.html"><i class="fa fa-check"></i><b>3.1</b> Allohexaploid <em>C. flexuosa</em></a>
+<ul>
+<li class="chapter" data-level="3.1.1" data-path="allohexaploid-c.-flexuosa.html"><a href="allohexaploid-c.-flexuosa.html#introduction"><i class="fa fa-check"></i><b>3.1.1</b> Introduction</a></li>
+<li class="chapter" data-level="3.1.2" data-path="allohexaploid-c.-flexuosa.html"><a href="allohexaploid-c.-flexuosa.html#data-preparation"><i class="fa fa-check"></i><b>3.1.2</b> Data Preparation</a></li>
+<li class="chapter" data-level="3.1.3" data-path="allohexaploid-c.-flexuosa.html"><a href="allohexaploid-c.-flexuosa.html#hobit"><i class="fa fa-check"></i><b>3.1.3</b> HOBIT</a></li>
+<li class="chapter" data-level="3.1.4" data-path="allohexaploid-c.-flexuosa.html"><a href="allohexaploid-c.-flexuosa.html#homeoroq"><i class="fa fa-check"></i><b>3.1.4</b> HomeoRoq</a></li>
+<li class="chapter" data-level="3.1.5" data-path="allohexaploid-c.-flexuosa.html"><a href="allohexaploid-c.-flexuosa.html#analysis-environment"><i class="fa fa-check"></i><b>3.1.5</b> Analysis Environment</a></li>
+</ul></li>
+<li class="chapter" data-level="3.2" data-path="allohexaploid-t.-aestivum.html"><a href="allohexaploid-t.-aestivum.html"><i class="fa fa-check"></i><b>3.2</b> Allohexaploid <em>T. aestivum</em></a>
+<ul>
+<li class="chapter" data-level="3.2.1" data-path="allohexaploid-t.-aestivum.html"><a href="allohexaploid-t.-aestivum.html#introduction-1"><i class="fa fa-check"></i><b>3.2.1</b> Introduction</a></li>
+<li class="chapter" data-level="3.2.2" data-path="allohexaploid-t.-aestivum.html"><a href="allohexaploid-t.-aestivum.html#data-preparation-1"><i class="fa fa-check"></i><b>3.2.2</b> Data Preparation</a></li>
+<li class="chapter" data-level="3.2.3" data-path="allohexaploid-t.-aestivum.html"><a href="allohexaploid-t.-aestivum.html#statistical-test"><i class="fa fa-check"></i><b>3.2.3</b> Statistical Test</a></li>
+<li class="chapter" data-level="3.2.4" data-path="allohexaploid-t.-aestivum.html"><a href="allohexaploid-t.-aestivum.html#combining-subgenomes"><i class="fa fa-check"></i><b>3.2.4</b> Combining Subgenomes</a></li>
+<li class="chapter" data-level="3.2.5" data-path="allohexaploid-t.-aestivum.html"><a href="allohexaploid-t.-aestivum.html#analysis-environment-1"><i class="fa fa-check"></i><b>3.2.5</b> Analysis Environment</a></li>
+</ul></li>
+<li class="chapter" data-level="3.3" data-path="allotriploid-c.-insueta.html"><a href="allotriploid-c.-insueta.html"><i class="fa fa-check"></i><b>3.3</b> Allotriploid <em>C. insueta</em></a>
+<ul>
+<li class="chapter" data-level="3.3.1" data-path="allotriploid-c.-insueta.html"><a href="allotriploid-c.-insueta.html#introduction-2"><i class="fa fa-check"></i><b>3.3.1</b> Introduction</a></li>
+<li class="chapter" data-level="3.3.2" data-path="allotriploid-c.-insueta.html"><a href="allotriploid-c.-insueta.html#data-preparation-2"><i class="fa fa-check"></i><b>3.3.2</b> Data Preparation</a></li>
+<li class="chapter" data-level="3.3.3" data-path="allotriploid-c.-insueta.html"><a href="allotriploid-c.-insueta.html#statistical-test-1"><i class="fa fa-check"></i><b>3.3.3</b> Statistical Test</a></li>
+<li class="chapter" data-level="3.3.4" data-path="allotriploid-c.-insueta.html"><a href="allotriploid-c.-insueta.html#analysis-environment-2"><i class="fa fa-check"></i><b>3.3.4</b> Analysis Environment</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="4" data-path="functions.html"><a href="functions.html"><i class="fa fa-check"></i><b>4</b> Functions</a>
+<ul>
+<li class="chapter" data-level="4.1" data-path="hobit-1.html"><a href="hobit-1.html"><i class="fa fa-check"></i><b>4.1</b> HOBIT</a>
+<ul>
+<li class="chapter" data-level="4.1.1" data-path="hobit-1.html"><a href="hobit-1.html#inputs"><i class="fa fa-check"></i><b>4.1.1</b> Inputs</a></li>
+<li class="chapter" data-level="4.1.2" data-path="hobit-1.html"><a href="hobit-1.html#test"><i class="fa fa-check"></i><b>4.1.2</b> Test</a></li>
+<li class="chapter" data-level="4.1.3" data-path="hobit-1.html"><a href="hobit-1.html#outputs"><i class="fa fa-check"></i><b>4.1.3</b> Outputs</a></li>
+<li class="chapter" data-level="4.1.4" data-path="hobit-1.html"><a href="hobit-1.html#options"><i class="fa fa-check"></i><b>4.1.4</b> Options</a></li>
+</ul></li>
+<li class="chapter" data-level="4.2" data-path="homeoroq-1.html"><a href="homeoroq-1.html"><i class="fa fa-check"></i><b>4.2</b> HomeoRoq</a>
+<ul>
+<li class="chapter" data-level="4.2.1" data-path="homeoroq-1.html"><a href="homeoroq-1.html#inputs-1"><i class="fa fa-check"></i><b>4.2.1</b> Inputs</a></li>
+<li class="chapter" data-level="4.2.2" data-path="homeoroq-1.html"><a href="homeoroq-1.html#test-1"><i class="fa fa-check"></i><b>4.2.2</b> Test</a></li>
+<li class="chapter" data-level="4.2.3" data-path="homeoroq-1.html"><a href="homeoroq-1.html#outputs-1"><i class="fa fa-check"></i><b>4.2.3</b> Outputs</a></li>
+<li class="chapter" data-level="4.2.4" data-path="homeoroq-1.html"><a href="homeoroq-1.html#options-1"><i class="fa fa-check"></i><b>4.2.4</b> Options</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="5" data-path="evaluation-framework.html"><a href="evaluation-framework.html"><i class="fa fa-check"></i><b>5</b> Evaluation Framework</a>
+<ul>
+<li class="chapter" data-level="5.1" data-path="simulating-allotetraploid-data.html"><a href="simulating-allotetraploid-data.html"><i class="fa fa-check"></i><b>5.1</b> Simulating Allotetraploid Data</a></li>
+<li class="chapter" data-level="5.2" data-path="simulating-allohexaploid-data.html"><a href="simulating-allohexaploid-data.html"><i class="fa fa-check"></i><b>5.2</b> Simulating Allohexaploid Data</a></li>
+<li class="chapter" data-level="5.3" data-path="custom-data-simulation.html"><a href="custom-data-simulation.html"><i class="fa fa-check"></i><b>5.3</b> Custom Data Simulation</a></li>
+<li class="chapter" data-level="5.4" data-path="evaluation-framework-1.html"><a href="evaluation-framework-1.html"><i class="fa fa-check"></i><b>5.4</b> Evaluation Framework</a></li>
+</ul></li>
+<li class="chapter" data-level="" data-path="citations.html"><a href="citations.html"><i class="fa fa-check"></i>Citations</a></li>
+<li class="chapter" data-level="" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i>References</a></li>
+</ul>
+
+      </nav>
+    </div>
+
+    <div class="book-body">
+      <div class="body-inner">
+        <div class="book-header" role="navigation">
+          <h1>
+            <i class="fa fa-circle-o-notch fa-spin"></i><a href="./"><em>hespresso</em> ☕</a>
+          </h1>
+        </div>
+
+        <div class="page-wrapper" tabindex="-1" role="main">
+          <div class="page-inner">
+
+            <section class="normal" id="section-">
+<div id="simulating-allohexaploid-data" class="section level2 hasAnchor" number="5.2">
+<h2><span class="header-section-number">5.2</span> Simulating Allohexaploid Data<a href="simulating-allohexaploid-data.html#simulating-allohexaploid-data" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>To simulate read counts for an allohexaploid with three subgenomes, set <code>n_subgenomes</code> = 3.
+In this case, the mean and dispersion parameters are derived from real RNA-Seq data
+of allohexaploid wheat <span class="citation">(Yang et al. 2021)</span>.</p>
+<div class="sourceCode" id="cb113"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb113-1"><a href="simulating-allohexaploid-data.html#cb113-1" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">sim_homeolog_counts</span>(<span class="at">n_subgenomes =</span> <span class="dv">3</span>)</span></code></pre></div>
+<p>Simulation parameters can be retrieved using the <code>get_sim_params()</code> function,
+and ground-truth homeologs with significant expression ratio shifts
+can be defined using the <code>def_sigShift()</code>, similar to the allotetraploid example.</p>
+<p>For exmaple, using the <code>def_sigShift()</code> function can define ground-truth RSHs,
+homeologs with large changes satisfied the given thresholds in any subgenome.</p>
+<div class="sourceCode" id="cb114"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb114-1"><a href="simulating-allohexaploid-data.html#cb114-1" tabindex="-1"></a>is_sig <span class="ot">&lt;-</span> <span class="fu">def_sigShift</span>(x, <span class="at">Dmax =</span> <span class="fl">0.2</span>, <span class="at">ORmax =</span> <span class="dv">2</span>, <span class="at">operator =</span> <span class="st">&quot;OR&quot;</span>)</span>
+<span id="cb114-2"><a href="simulating-allohexaploid-data.html#cb114-2" tabindex="-1"></a><span class="fu">table</span>(is_sig)</span></code></pre></div>
+<pre><code>## is_sig
+## FALSE  TRUE 
+##  9091   909</code></pre>
+<p>To define shifts specific to a single subgenome (e.g., the first subgenome),
+set the <code>base</code> argument accordingly as follows.</p>
+<div class="sourceCode" id="cb116"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb116-1"><a href="simulating-allohexaploid-data.html#cb116-1" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">sim_homeolog_counts</span>(<span class="at">n_subgenomes =</span> <span class="dv">3</span>)</span>
+<span id="cb116-2"><a href="simulating-allohexaploid-data.html#cb116-2" tabindex="-1"></a></span>
+<span id="cb116-3"><a href="simulating-allohexaploid-data.html#cb116-3" tabindex="-1"></a>is_sig <span class="ot">&lt;-</span> <span class="fu">def_sigShift</span>(x, <span class="at">base =</span> <span class="dv">1</span>, <span class="at">Dmax =</span> <span class="fl">0.2</span>, <span class="at">ORmax =</span> <span class="dv">2</span>, <span class="at">operator =</span> <span class="st">&quot;OR&quot;</span>)</span>
+<span id="cb116-4"><a href="simulating-allohexaploid-data.html#cb116-4" tabindex="-1"></a><span class="fu">table</span>(is_sig)</span></code></pre></div>
+<pre><code>## is_sig
+## FALSE  TRUE 
+##  9577   423</code></pre>
+<p>Visualization of allohexaploid data, comprising three subgenomes,
+follows a similar workflow as for allotetraploids.
+To display the distribution of expression ratios for the first subgenome,
+run as follows.</p>
+<div class="sourceCode" id="cb118"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb118-1"><a href="simulating-allohexaploid-data.html#cb118-1" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">sim_homeolog_counts</span>(<span class="at">n_subgenomes =</span> <span class="dv">3</span>)</span>
+<span id="cb118-2"><a href="simulating-allohexaploid-data.html#cb118-2" tabindex="-1"></a>distr_plots_1 <span class="ot">&lt;-</span> <span class="fu">plot_HER_distr</span>(x)</span>
+<span id="cb118-3"><a href="simulating-allohexaploid-data.html#cb118-3" tabindex="-1"></a><span class="fu">names</span>(distr_plots_1)</span></code></pre></div>
+<pre><code>## [1] &quot;group_1&quot; &quot;group_2&quot;</code></pre>
+<div class="sourceCode" id="cb120"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb120-1"><a href="simulating-allohexaploid-data.html#cb120-1" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb120-2"><a href="simulating-allohexaploid-data.html#cb120-2" tabindex="-1"></a><span class="fu">library</span>(gridExtra)</span>
+<span id="cb120-3"><a href="simulating-allohexaploid-data.html#cb120-3" tabindex="-1"></a><span class="fu">grid.arrange</span>(distr_plots_1[[<span class="st">&quot;group_1&quot;</span>]] <span class="sc">+</span> <span class="fu">ggtitle</span>(<span class="st">&quot;group_1 on 1st subgenome&quot;</span>), </span>
+<span id="cb120-4"><a href="simulating-allohexaploid-data.html#cb120-4" tabindex="-1"></a>             distr_plots_1[[<span class="st">&quot;group_2&quot;</span>]] <span class="sc">+</span> <span class="fu">ggtitle</span>(<span class="st">&quot;group_2 on 1st subgenome&quot;</span>),</span>
+<span id="cb120-5"><a href="simulating-allohexaploid-data.html#cb120-5" tabindex="-1"></a>             <span class="at">ncol =</span> <span class="dv">2</span>)</span></code></pre></div>
+<div class="figure"><span style="display:block;" id="fig:sim-3x-plotherdistr"></span>
+<img src="_main_files/figure-html/sim-3x-plotherdistr-1.png" alt="Distribution of homeolog expression ratios for the first subgenome in a simulated allohexaploid across two groups." width="672" />
+<p class="caption">
+Figure 5.4: Distribution of homeolog expression ratios for the first subgenome in a simulated allohexaploid across two groups.
+</p>
+</div>
+<p>Users can specify which subgenome to use for calculating expression ratios with the <code>base</code> argument.
+For example, to visualize ratios for the second or third subgenome, run as follows.</p>
+<div class="sourceCode" id="cb121"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb121-1"><a href="simulating-allohexaploid-data.html#cb121-1" tabindex="-1"></a>distr_plots_2 <span class="ot">&lt;-</span> <span class="fu">plot_HER_distr</span>(x, <span class="at">base =</span> <span class="dv">2</span>)</span>
+<span id="cb121-2"><a href="simulating-allohexaploid-data.html#cb121-2" tabindex="-1"></a>distr_plots_3 <span class="ot">&lt;-</span> <span class="fu">plot_HER_distr</span>(x, <span class="at">base =</span> <span class="dv">3</span>)</span>
+<span id="cb121-3"><a href="simulating-allohexaploid-data.html#cb121-3" tabindex="-1"></a></span>
+<span id="cb121-4"><a href="simulating-allohexaploid-data.html#cb121-4" tabindex="-1"></a><span class="fu">grid.arrange</span>(distr_plots_1[[<span class="st">&quot;group_1&quot;</span>]] <span class="sc">+</span> <span class="fu">ggtitle</span>(<span class="st">&quot;group_1 on #1&quot;</span>), distr_plots_1[[<span class="st">&quot;group_2&quot;</span>]] <span class="sc">+</span> <span class="fu">ggtitle</span>(<span class="st">&quot;group_2 on #1&quot;</span>),</span>
+<span id="cb121-5"><a href="simulating-allohexaploid-data.html#cb121-5" tabindex="-1"></a>             distr_plots_2[[<span class="st">&quot;group_1&quot;</span>]] <span class="sc">+</span> <span class="fu">ggtitle</span>(<span class="st">&quot;group_1 on #2&quot;</span>), distr_plots_2[[<span class="st">&quot;group_2&quot;</span>]] <span class="sc">+</span> <span class="fu">ggtitle</span>(<span class="st">&quot;group_2 on #2&quot;</span>),</span>
+<span id="cb121-6"><a href="simulating-allohexaploid-data.html#cb121-6" tabindex="-1"></a>             distr_plots_3[[<span class="st">&quot;group_1&quot;</span>]] <span class="sc">+</span> <span class="fu">ggtitle</span>(<span class="st">&quot;group_1 on #3&quot;</span>), distr_plots_3[[<span class="st">&quot;group_2&quot;</span>]] <span class="sc">+</span> <span class="fu">ggtitle</span>(<span class="st">&quot;group_2 on #3&quot;</span>),</span>
+<span id="cb121-7"><a href="simulating-allohexaploid-data.html#cb121-7" tabindex="-1"></a>             <span class="at">ncol =</span> <span class="dv">2</span>)</span></code></pre></div>
+<div class="figure"><span style="display:block;" id="fig:sim-3x-plotherdistr-base"></span>
+<img src="_main_files/figure-html/sim-3x-plotherdistr-base-1.png" alt="Distribution of homeolog expression ratios for all subgenomes in a simulated allohexaploid across two groups." width="672" />
+<p class="caption">
+Figure 5.5: Distribution of homeolog expression ratios for all subgenomes in a simulated allohexaploid across two groups.
+</p>
+</div>
+<p>The <code>plot_HER()</code> function also works for allohexaploids.
+By default, it plots expression ratios for the first subgenome.</p>
+<div class="sourceCode" id="cb122"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb122-1"><a href="simulating-allohexaploid-data.html#cb122-1" tabindex="-1"></a><span class="fu">plot_HER</span>(x, <span class="at">alpha =</span> <span class="fl">0.3</span>)</span></code></pre></div>
+<div class="figure"><span style="display:block;" id="fig:sim-3x-plother"></span>
+<img src="_main_files/figure-html/sim-3x-plother-1.png" alt="Changes in homeolog expression ratios of the first subgenome between two groups. Each point represents the expression ratio of the first subgenome in both groups." width="672" />
+<p class="caption">
+Figure 5.6: Changes in homeolog expression ratios of the first subgenome between two groups. Each point represents the expression ratio of the first subgenome in both groups.
+</p>
+</div>
+<p>To plot ratios for a specific subgenome, set the <code>base</code> argument.
+For example, to visualize the second subgenome, run as follows.</p>
+<div class="sourceCode" id="cb123"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb123-1"><a href="simulating-allohexaploid-data.html#cb123-1" tabindex="-1"></a><span class="fu">plot_HER</span>(x, <span class="at">base =</span> <span class="dv">2</span>, <span class="at">alpha =</span> <span class="fl">0.3</span>)</span></code></pre></div>
+<div class="figure"><span style="display:block;" id="fig:sim-3x-plother-base2"></span>
+<img src="_main_files/figure-html/sim-3x-plother-base2-1.png" alt="Changes in homeolog expression ratios of the second subgenome between two groups. Each point represents the expression ratio of the second subgenome in both groups." width="672" />
+<p class="caption">
+Figure 5.7: Changes in homeolog expression ratios of the second subgenome between two groups. Each point represents the expression ratio of the second subgenome in both groups.
+</p>
+</div>
+<p>Ground-truth shifts can be highlighted in the scatter plot using <code>def_sigShift()</code>.
+By default, shifts are defined across all subgenomes,
+so some homeologs may appear highlighted even if changes in the plotted subgenome are minor.</p>
+<div class="sourceCode" id="cb124"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb124-1"><a href="simulating-allohexaploid-data.html#cb124-1" tabindex="-1"></a>is_sig <span class="ot">&lt;-</span> <span class="fu">def_sigShift</span>(x, <span class="at">base =</span> <span class="dv">0</span>, <span class="at">Dmax =</span> <span class="fl">0.2</span>, <span class="at">ORmax =</span> <span class="dv">2</span>)</span>
+<span id="cb124-2"><a href="simulating-allohexaploid-data.html#cb124-2" tabindex="-1"></a><span class="fu">plot_HER</span>(x, <span class="at">label =</span> is_sig, <span class="at">alpha =</span> <span class="fl">0.3</span>)</span></code></pre></div>
+<div class="figure"><span style="display:block;" id="fig:sim-3x-plother-gt"></span>
+<img src="_main_files/figure-html/sim-3x-plother-gt-1.png" alt="Changes in homeolog expression ratios of the first subgenome between two groups. Orange points indicate homeologs with significant changes in any subgenome, while gray points indicate no significant change." width="672" />
+<p class="caption">
+Figure 5.8: Changes in homeolog expression ratios of the first subgenome between two groups. Orange points indicate homeologs with significant changes in any subgenome, while gray points indicate no significant change.
+</p>
+</div>
+<p>To highlight only homeologs that meet the thresholds in a specific subgenome,
+specify the <code>base</code> argument.</p>
+<div class="sourceCode" id="cb125"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb125-1"><a href="simulating-allohexaploid-data.html#cb125-1" tabindex="-1"></a>is_sig_b1 <span class="ot">&lt;-</span> <span class="fu">def_sigShift</span>(x, <span class="at">base =</span> <span class="dv">1</span>, <span class="at">Dmax =</span> <span class="fl">0.2</span>, <span class="at">ORmax =</span> <span class="fl">1.8</span>)</span>
+<span id="cb125-2"><a href="simulating-allohexaploid-data.html#cb125-2" tabindex="-1"></a><span class="fu">plot_HER</span>(x, <span class="at">base =</span> <span class="dv">1</span>, <span class="at">label =</span> is_sig_b1, <span class="at">alpha =</span> <span class="fl">0.3</span>)</span></code></pre></div>
+<div class="figure"><span style="display:block;" id="fig:sim-3x-plother-gt-base2"></span>
+<img src="_main_files/figure-html/sim-3x-plother-gt-base2-1.png" alt="Changes in homeolog expression ratios of the first subgenome between two groups. Orange points indicate homeologs with significant changes in the first subgenome, while gray points show no significant change." width="672" />
+<p class="caption">
+Figure 5.9: Changes in homeolog expression ratios of the first subgenome between two groups. Orange points indicate homeologs with significant changes in the first subgenome, while gray points show no significant change.
+</p>
+</div>
+</div>
+            </section>
+
+          </div>
+        </div>
+      </div>
+<a href="simulating-allotetraploid-data.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+<a href="custom-data-simulation.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
+    </div>
+  </div>
+<script src="libs/gitbook-2.6.7/js/app.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/clipboard.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-fontsettings.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-bookdown.js"></script>
+<script src="libs/gitbook-2.6.7/js/jquery.highlight.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-clipboard.js"></script>
+<script>
+gitbook.require(["gitbook"], function(gitbook) {
+gitbook.start({
+  "sharing": {
+    "github": false,
+    "facebook": true,
+    "twitter": true,
+    "linkedin": false,
+    "weibo": false,
+    "instapaper": false,
+    "vk": false,
+    "whatsapp": false,
+    "all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
+  },
+  "fontsettings": {
+    "theme": "white",
+    "family": "sans",
+    "size": 2
+  },
+  "edit": {
+    "link": null,
+    "text": null
+  },
+  "history": {
+    "link": null,
+    "text": null
+  },
+  "view": {
+    "link": null,
+    "text": null
+  },
+  "download": null,
+  "search": {
+    "engine": "fuse",
+    "options": null
+  },
+  "toc": {
+    "collapse": "subsection"
+  },
+  "number_sections": true,
+  "biblio-style": "apalike",
+  "link-citations": true
+});
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    var src = "true";
+    if (src === "" || src === "true") src = "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/latest.js?config=TeX-MML-AM_CHTML";
+    if (location.protocol !== "file:")
+      if (/^https?:/.test(src))
+        src = src.replace(/^https?:/, '');
+    script.src = src;
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+</body>
+
+</html>

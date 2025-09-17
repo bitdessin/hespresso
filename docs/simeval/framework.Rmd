@@ -1,0 +1,54 @@
+## Evaluation Framework
+
+```{r sim-fw-setup, include=FALSE}
+source("../_config.R")
+```
+
+
+By combining the `sim_homeolog_counts()` and `def_sigShift()` functions,
+users can evaluate the performance of HOBIT using standard metrics
+such as precision, recall, F1 score, and area under the ROC curve (AUC).
+
+For reliable evaluation,
+we recommend simulating a large number of homeologs
+to ensure the dataset contains enough homeologs with significant expression ratio shifts for robust validation.
+To reduce computation time in this example,
+we simulate data for only 1,000 homeologs.
+
+```{r sim-fw-dataset, results="hide", message=FALSE, warning=FALSE}
+x <- sim_homeolog_counts(n_genes = 1000)
+x_output <- hobit(x)
+```
+
+Next, predicted homeologs with significant expression ratio shifts are identified
+using an FDR threshold of 0.05.
+Performance metrics are then calculated by comparing the predicted shifts
+against the ground-truth shifts,
+which are defined using the `def_sigShift()` function.
+The AUC is computed using the *p*-values from the `hobit()` output
+with the `auc()` and `roc()` functions from the `r pkg("pROC", "cran")` package [@ref_proc].
+
+
+```{r sim-fw-metrics}
+library(pROC)
+
+pred_sig <- (x_output$qvalue < 0.05)
+true_sig <- def_sigShift(x, Dmax = 0.2, ORmax = 2, operator = "OR")
+
+tp <- sum(pred_sig & true_sig)
+tn <- sum(!pred_sig & !true_sig)
+fp <- sum(pred_sig & !true_sig)
+fn <- sum(!pred_sig & true_sig)
+
+precision <- tp / (tp + fp)
+recall <- tp / (tp + fn)
+f1 <- 2 * precision * recall / (precision + recall)
+auc <- auc(roc(true_sig, 1 - x_output$pvalue, levels = c(FALSE, TRUE), direction = "<"))
+
+print(c(precision = precision, recall = recall, f1 = f1, auc = auc))
+```
+
+This workflow demonstrates a complete evaluation framework for HOBIT
+or related methods using simulated datasets,
+enabling users to assess accuracy and robustness in detecting shifts in homeolog expression ratios.
+

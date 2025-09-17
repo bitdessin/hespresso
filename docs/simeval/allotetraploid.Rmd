@@ -1,0 +1,104 @@
+## Simulating Allotetraploid Data
+
+```{r sim-2x-setup, include=FALSE}
+source("../_config.R")
+```
+
+The `r pkg("hespresso")` package provides functions
+to simulate artificial read counts for allotetraploid and allohexaploid species.
+By default, the simulation generates read counts
+for an allotetraploid with 10,000 homeologs across two conditions,
+each with three biological replicates.
+The mean and dispersion parameters are estimated
+from real RNA-Seq data from an allotetraploid *Cardamine flexuosa* dataset [@ref_cflex_ecohabitats].
+
+To generate a simulated dataset with default options, run as follows.
+
+```{r sim-2x-default}
+x <- sim_homeolog_counts()
+x
+```
+
+Options can be flexibly customized by users.
+For example, to simulate data with 1,000 homeologs and 5 replicates per condition,
+run as follows.
+
+```{r sim-2x-1000h-5r}
+x <- sim_homeolog_counts(n_gene = 1000, n_replicates = c(5, 5))
+x
+```
+
+Simulated read counts are generated from a negative binomial (NB) distribution.
+The mean and dispersion values used for each homeolog are stored in the object returned by `sim_homeolog_counts()`.
+The `get_sim_params()` function can be used to retrieve these parameters.
+For example, to get means used for sampling read counts, run as follows.
+
+```{r sim-2x-getsimparams}
+param_mu <- get_sim_params(x, "mu")
+names(param_mu)
+head(param_mu[["group_1"]])
+```
+
+The output is a list of data frames, one per condition, with columns representing individual subgenomes.
+These ground-truth mean values can be used to calculate true homeolog expression ratios for each condition.
+Users can then define homeologs that show significant changes in expression ratios between conditions.
+
+Alternatively, the `def_sigShift()` function can automatically
+define homeologs with significant shifts without manual calculations.
+For example, to identify homeologs with a maximum absolute ratio difference (`Dmax`) greater than 0.2
+or a maximum odds ratio (`ORmax`) exceeding 2.0, use the following code.
+
+```{r sim-2x-defgtrch}
+x <- sim_homeolog_counts()
+
+is_sig <- def_sigShift(x, Dmax = 0.2, ORmax = 2, operator = "OR")
+table(is_sig)
+```
+
+The output shows the number of homeologs meeting these thresholds.
+
+To visualize the distribution of expression ratios across conditions,
+use the `plot_HER_distr()` function.
+This returns a list of histograms, one per condition,
+with ratios calculated by default for the first subgenome (`base = 1`).
+
+```{r sim-2x-plotherdistr}
+x <- sim_homeolog_counts()
+distr_plots <- plot_HER_distr(x)
+```
+
+Since the simulated dataset contains two groups,
+the `plot_HER_distr()` function returns two histograms.
+
+```{r sim-2x-plotherdistr-plotnames}
+names(distr_plots)
+```
+
+To display the distributions for each group, run as follows.
+
+```{r sim-2x-plotherdistr-plots, fig.cap="Distribution of homeolog expression ratios in two simulated groups.", fig.height=2.6}
+library(ggplot2)
+library(gridExtra)
+
+grid.arrange(distr_plots[["group_1"]] + ggtitle("group_1"), 
+             distr_plots[["group_2"]] + ggtitle("group_2"),
+             ncol = 2)
+```
+
+
+To compare expression ratios between groups, use the `plot_HER()` function,
+which by default plots ratios for the first subgenome in a scatter plot.
+
+
+```{r sim-2x-plother, fig.cap="Changes in homeolog expression ratios between two groups. Each point represents the expression ratio in group 1 (x-axis) and group 2 (y-axis)."}
+plot_HER(x, alpha = 0.3)
+```
+
+If the dataset was generated using `sim_homeolog_counts()`,
+ground-truth significant shifts can be highlighted as follows using the `def_sigShift()` function.
+
+```{r sim-2x-plother-label, fig.cap="Changes in homeolog expression ratios between two groups. Orange points indicate homeologs with significant changes in expression ratios, while gray points represent those without significant changes."}
+is_sig <- def_sigShift(x, Dmax = 0.2, ORmax = 2.0)
+plot_HER(x, label = is_sig, alpha = 0.3)
+```
+

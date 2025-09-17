@@ -1,0 +1,25 @@
+# Evaluation Framework
+
+This chapter presents a comprehensive framework for evaluating methods
+that detect shifts in homeolog expression ratios,
+such as HOBIT, using simulated datasets.
+It covers generating artificial datasets that mimic allotetraploid and allohexaploid species,
+visualizing the ground truth of homeolog expression patterns,
+and calculating standard evaluation metrics.
+
+
+```{r sim-sec-4x, child='simeval/allotetraploid.Rmd'}
+```
+
+
+```{r sim-sec-6x, child='simeval/allohexaploid.Rmd'}
+```
+
+
+```{r sim-sec-seed, child='simeval/seed.Rmd'}
+```
+
+
+```{r sim-sec-fw, child='simeval/framework.Rmd'}
+```
+

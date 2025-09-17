@@ -1,0 +1,29 @@
+# Installation
+
+To install the `r pkg("hespresso")` package,
+start R (version 4.5 or later) and run the following commands:
+
+
+```{r installation-package, eval=FALSE}
+# CRAN Packages
+install.packages(c("remotes", "foreach", "doParallel", "progressr", "ggplot2"))
+
+# Bioconductor Packages
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install("edgeR")
+
+# cmdstanr
+install.packages("cmdstanr", repos = c("https://stan-dev.r-universe.dev", getOption("repos")))
+install_cmdstan()
+
+# hespresso
+remotes::install_github("bitdessin/hespresso")
+```
+
+Because `r pkg("hespresso")` relies on `r pkg("cmdstanr")` [@ref_stan],
+which is not available on [CRAN](https://cran.r-project.org/) or
+[Bioconductor](https://www.bioconductor.org/),
+it cannot be hosted on these repositories,
+making the installation slightly more complex than that of typical R packages.
+

@@ -1,0 +1,48 @@
+# Quick Start
+
+```{r qs-setup, include=FALSE}
+source("_config.R")
+```
+
+The following example illustrates the complete workflow for HOBIT,
+from loading the data to performing the statistical test.
+
+
+```{r qs-hobit, message=FALSE, warning=FALSE}
+# gene expression
+gexp <- read.table("data/c_flexuosa.0516.mini.txt.gz", header = TRUE, sep = "\t", row.names = 1)
+
+# experimental groups
+group <- c("wet", "wet", "wet", "dry", "dry", "dry")
+
+# mapping table to organize gene expression into homeolog expression
+mapping_table <- read.table("data/c_flexuosa.homeolog.txt.gz", header = TRUE, sep = "\t")
+
+# data preparation
+x <- newExpMX(gexp, group, mapping_table)
+
+# normalization
+x <- norm_counts(x)
+
+# statistical test
+x_output <- hobit(x)
+
+head(x_output)
+```
+
+The following example demonstrates the workflow for HomeoRoq.
+Compared to HOBIT, the only difference is that the statistical test is performed
+using the `homeoroq()` function instead of `hobit()`.
+
+```{r qs-homeoroq, message=FALSE, warning=FALSE}
+gexp <- read.table("data/c_flexuosa.0516.mini.txt.gz", header = TRUE, sep = "\t", row.names = 1)
+group <- c("wet", "wet", "wet", "dry", "dry", "dry")
+mapping_table <- read.table("data/c_flexuosa.homeolog.txt.gz", header = TRUE, sep = "\t")
+
+x <- newExpMX(gexp, group, mapping_table)
+x <- norm_counts(x)
+x_output <- homeoroq(x)
+
+head(x_output)
+```
+
