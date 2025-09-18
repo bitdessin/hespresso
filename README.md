@@ -7,40 +7,9 @@ ratios among subgenomes of allopolyploid species across diverse conditions,
 using RNA-Seq read count data.
 Take a sip of _hespresso_, and start your analysis strong!
 
-
-## Installation
-
-To install the _hespresso_ package,
-start R (version 4.5 or later) and run the following commands:
-
-```r
-# Bioconductor Packages
-if (!requireNamespace("BiocManager", quietly = TRUE))
-    install.packages("BiocManager")
-BiocManager::install(c("edgeR"))
-
-# CRAN Packages
-install.packages(c("remotes", "foreach", "doParallel", "progressr", "ggplot2"))
-
-# cmdstanr
-install.packages("cmdstanr", repos = c("https://stan-dev.r-universe.dev", getOption("repos")))
-install_cmdstan()
-
-# hespresso
-remotes::install_github("bitdessin/hespresso")
-```
-
-
-
 ## Documentation
 
-To list all available vignettes included in the _hespresso_ package,
-run as below.
-
-```r
-browseVignettes("hespresso")
-```
-
+- https://bitdessin.github.io/hespresso/
 
 ## Citations
 

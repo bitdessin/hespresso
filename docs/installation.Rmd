@@ -6,16 +6,14 @@ start R (version 4.5 or later) and run the following commands:
 
 ```{r installation-package, eval=FALSE}
 # CRAN Packages
-install.packages(c("remotes", "foreach", "doParallel", "progressr", "ggplot2"))
+install.packages(c("remotes", "BiocManager"))
 
 # Bioconductor Packages
-if (!requireNamespace("BiocManager", quietly = TRUE))
-    install.packages("BiocManager")
 BiocManager::install("edgeR")
 
 # cmdstanr
 install.packages("cmdstanr", repos = c("https://stan-dev.r-universe.dev", getOption("repos")))
-install_cmdstan()
+cmdstanr::install_cmdstan()
 
 # hespresso
 remotes::install_github("bitdessin/hespresso")
