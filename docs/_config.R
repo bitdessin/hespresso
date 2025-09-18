@@ -2,7 +2,7 @@ rm(list = ls(all = TRUE))
 
 library(hespresso)
 options(mc.cores = parallel::detectCores(logical = TRUE))
-options(width = 1e5)
+options(width = 10000)
 options(ggplot2.discrete.colour = c("#999999", "#E69F00", "#56B4E9", "#009E73",
                                     "#F0E442", "#0072B2", "#D55E00", "#CC79A7"))
 knitr::opts_chunk$set(tidy = FALSE,
