@@ -200,29 +200,28 @@
 }
 
 
-.hb.calc_dmax <- function(theta) {
-    diff_thetas <- NULL
-    for (i in seq_along(theta)){
-        for (j in seq_along(theta)) {
-            diff_thetas <- c(diff_thetas,
-                             abs(apply(theta[[i]] - theta[[j]], 2, median)))
-        }
-    }
-    max(diff_thetas, na.rm = TRUE)
-}
-
-.hb.calc_ormax <- function(theta) {
-    ors <- NULL
-    for (i in seq_along(theta)) {
-        for (j in seq_along(theta)) {
-            for (s in seq_len(ncol(theta[[i]]))) {
-                oi <- theta[[i]][, s] / (1 - theta[[i]][, s])
-                oj <- theta[[j]][, s] / (1 - theta[[j]][, s])
-                ors <- c(ors, median(oj / oi))
+.hb.calc_shifts <- function(theta) {
+    d <- or <- d_names <- or_names <- NULL
+    for (s in seq_len(ncol(theta[[1]]))) {
+        for (i in seq(1, length(theta) - 1)) {
+            for (j in seq(i + 1, length(theta))) {
+                i_tags <- strsplit(colnames(theta[[i]])[s], '__..__')[[1]]
+                j_tags <- strsplit(colnames(theta[[j]])[s], '__..__')[[1]]
+                d <- cbind(d, theta[[i]][, s] - theta[[j]][, s])
+                or <- cbind(or, (theta[[i]][, s] / (1 - theta[[i]][, s])) / (theta[[j]][, s] / (1 - theta[[j]][, s])))
+                d_names <- c(d_names,
+                             paste0('D__', i_tags[2], '__(', i_tags[3], '-', j_tags[3], ')'))
+                or_names <- c(or_names,
+                              paste0('OR__', i_tags[2], '__(', i_tags[3], '/', j_tags[3], ')'))
             }
         }
+        
     }
-    max(abs(ors), na.rm = TRUE)
+    d <- apply(d, 2, median)
+    or <- apply(or, 2, median)
+    d_stats <- c(d, or, max(abs(d), na.rm = TRUE), max(c(or, 1 / or), na.rm = TRUE))
+    names(d_stats) <- c(d_names, or_names, 'Dmax', 'ORmax')
+    d_stats
 }
 
 
@@ -236,22 +235,22 @@
     # theta for null hypothesis
     theta0 <- dmat[, base::match(paste0('theta0[',
                         seq(1, inputs$N_SUBGENOMES), ']'), colnames(dmat))]
-    colnames(theta0) <- paste0('theta0__', inputs$.META$subgenome_names)
+    colnames(theta0) <- paste0('theta0__..__', inputs$.META$subgenome_names)
     
     # theta for alternative hypothesis
     theta <- vector('list', length = inputs$N_CONDITIONS)
     for (i in seq_len(inputs$N_CONDITIONS)) {
         theta[[i]] <- dmat[, match(paste0('theta1[', i,',',
                         seq(1, inputs$N_SUBGENOMES), ']'), colnames(dmat))]
-        colnames(theta[[i]]) <- paste0('theta__',
-                                       inputs$.META$subgenome_names, '__',
+        colnames(theta[[i]]) <- paste0('theta1__..__',
+                                       inputs$.META$subgenome_names, '__..__',
                                        inputs$.META$condition_names[i])
     }
 
     # log-likelihood
     log_lik <- dmat[, match(c('log_lik[1]', 'log_lik[2]'), colnames(dmat))]
     colnames(log_lik) <- c('logLik_H0', 'logLik_H1')
-
+    
     # format
     v <- apply(theta0, 2, median)
     for (i in seq_along(theta)) {
@@ -259,101 +258,102 @@
     }
     v <- c(v, apply(log_lik, 2, median))
     v <- c(v,
-           Dmax = .hb.calc_dmax(theta),
-           ORmax = .hb.calc_ormax(theta),
+           .hb.calc_shifts(theta),
            raw_pvalue = .hb.calc_p(log_lik, inputs, FALSE),
            raw_qvalue = NA,
            pvalue = .hb.calc_p(log_lik, inputs, TRUE),
            qvalue = NA)
     v_mat <- matrix(v, nrow = 1)
     colnames(v_mat) <- names(v)
-    
     v_mat
 }
 
 
 #' HOBIT: Detecting Shifts in Homeolog Expression Ratios
 #' 
-#' A statistical method for detecting shifts in homeolog expressio ratios
-#' in allopolyploids across diverse conditions.
+#' A statistical framework for identifying changes in homeolog expression ratios
+#' across experimental conditions in allopolyploid species.
 #' 
 #' HOBIT is a statistical test for detecting homeologs with differential
-#' homeolog expression ratios (HERs) across multiple experimental conditions
+#' homeolog expression ratios across multiple experimental conditions
 #' in allopolyploid species, using RNA-Seq read count data.
 #' It employs a likelihood ratio test (LRT) to compare two hierarchical models:
-#' a full model that allows HERs to vary among conditions, and a reduced model
-#' that assumes constant ratios across all conditions.
+#' a full model that allows HERs to vary among conditions,
+#' and a reduced model that assumes constant ratios across all conditions.
 #' 
-#' HOBIT models homeolog expression using an negative binomial (NB) distribution.
-#' Specifically, the expression level of a homeolog on the \eqn{i}-th subgenome,
-#' denoted by \eqn{x_{i}}, is assumed to follow an NB distribution with mean
-#' \eqn{\mu\theta_{i}} and dispersion \eqn{\phi}, where \eqn{\mu} is total gene
-#' expression across all subgenomes, \eqn{\theta_{i}} is HER for the \eqn{i}-th
-#' subgenome, and \eqn{\phi} is dispersion parameter.
+#' Expression counts are modeled using a negative binomial (NB) distribution.
+#' Specifically, the expression level of a homeolog from the \eqn{i}-th subgenome,
+#' denoted \eqn{x_{i}}, is assumed to follow an NB distribution with mean
+#' \eqn{\mu \theta_{i}} and dispersion \eqn{\phi}, where \eqn{\mu} is the total
+#' gene expression across subgenomes, \eqn{\theta_{i}} is the proportion of
+#' expression attributable to the \eqn{i}-th subgenome, and \eqn{\phi} is the
+#' dispersion parameter:
 #' 
 #' \deqn{
-#' x_{i} \sim NB(\mu\theta_{i}, \phi)
+#' x_{i} \sim NB(\mu \theta_{i}, \phi)
 #' }
 #' 
-#' By default, HOBIT samples \eqn{\mu} and \eqn{\boldsymbol{\theta}} from
-#' uninformative prior distributions. The dispersion \eqn{\phi} is estimated
-#' using the \code{\link[edgeR]{estimateDisp}} function from the \pkg{edgeR}
-#' package.
+#' By default, \eqn{\mu} and \eqn{\boldsymbol{\theta}} are sampled from
+#' uninformative priors, while dispersion \eqn{\phi} is estimated using
+#' \code{\link[edgeR]{estimateDisp}} from the \pkg{edgeR} package.
 #' 
-#' With these assumptions, HOBIT performs Markov chain Monte Carlo (MCMC)
-#' sampling to fit both full and reduced model and compute likelihoods between
-#' the two models. The `hobit()` function provides an end-to-end interface for
-#' parameter estimation, model fitting, likelihood computation, and the LRT.
+#' HOBIT uses Markov chain Monte Carlo (MCMC) sampling to fit both the full and
+#' reduced models and compute likelihoods for the LRT. The main entry point is
+#' the `hobit()` function, which performs parameter estimation, model fitting,
+#' likelihood computation, and hypothesis testing.
 #'
-#' @param x An \linkS4class{ExpMX} class object containing normalized homeolog
-#'      expression data (i.e., RNA-Seq read counts).
+#' @param x An \linkS4class{ExpMX} object containing normalized homeolog
+#'      expression data (RNA-Seq read counts).
 #' @param use_Dirichlet Logical. Whether to apply a Dirichlet prior distribution
-#'      for sampling HERs.
-#' @param no_replicate Logical. Whether to treat all replicates as belonging to
-#'      a single condition when estimating dispersion. Set to `TRUE` if the
-#'      dataset lacks replicates to avoid errors during dispersion estimation.
-#' @param eps Numeric. A small value specifying the minimum threshold for
-#'      homeolog expression. Expression values below this threshold are replaced
-#'      to avoid issues during MCMC sampling, particularly when drawing from a
-#'      NB distribution with near-zero means.
-#' @param dist Character. The distribution to use for modeling expression data.
-#'      Options are `'NB'` and `'ZINB'` (Zero-Inflated NB).
-#' @param n_threads Integer. Specifies the number of threads used for parallel
-#'      processing of homeologs. This parallelization is applied at the homeolog
-#'      level and is independent of the MCMC sampling process, which is
-#'      controlled by the `parallel_chains` argument.
-#'      The default value is taken from the global option `'mc.cores'`,
-#'      which can be set at the beginning of an R session using
-#'      `options(mc.cores = 4)`. If `'mc.cores'` is not set, the default is 1.
-#'      In general, setting a higher value for `n_threads` while keeping
-#'      `parallel_chains = 1` often results in better performance compared
-#'      to allocating more threads to `parallel_chains`.
-#' @param parallel_chains Integer. Specifies the number of threads used to
-#'      parallelize MCMC sampling across multiple chains. This argument is
-#'      passed directly to the \code{\link[cmdstanr]{sample}} function in the
-#'      \pkg{cmdstanr} package.
-#'      If both `n_threads` and `parallel_chains` are greater than 1, the total
-#'      number of threads required will be `n_threads × parallel_chains`.
-#'      Make sure sufficient computational resources are available
-#'      to support this configuration.
-#' @param ... Additional arguments passed to the \code{\link[cmdstanr]{sample}}
-#'      function in the \pkg{cmdstanr} package
-#'      (e.g., `chains`, `iter_warmup`, `iter_sampling`, `thin`).
+#'      when sampling expression ratios.
+#' @param no_replicate Logical. If `TRUE`, all replicates are treated as a
+#'      single condition when estimating dispersion. This avoids errors in cases
+#'      where no biological replicates are available.
+#' @param eps Numeric. Minimum threshold for homeolog expression. Values below
+#'      this threshold are replaced with 0 to avoid instability during MCMC sampling,
+#'      especially when fitting NB models with near-zero means.
+#' @param dist Character. Distribution used to model expression data.
+#'      Options: `'NB'` (negative binomial) or `'ZINB'` (zero-inflated negative
+#'      binomial).
+#' @param n_threads Integer. Number of threads for parallelizing computation
+#'      across homeologs. This parallelization is independent of MCMC sampling,
+#'      which is controlled by `parallel_chains`. Defaults to the global option
+#'      `'mc.cores'`, or 1 if not set. In practice, using a larger `n_threads`
+#'      with `parallel_chains = 1` typically reduces overall execution time 
+#'      compared to allocating more threads to MCMC chains.
+#' @param parallel_chains Integer. Number of parallel MCMC chains. Passed
+#'      directly to \code{\link[cmdstanr]{sample}} in the \pkg{cmdstanr} package.
+#'      If both `n_threads` and `parallel_chains` exceed 1, the total number of
+#'      threads used is `n_threads × parallel_chains`. Ensure adequate resources
+#'      are available before increasing both parameters.
+#' @param ... Additional arguments passed to
+#'      \code{\link[cmdstanr]{sample}} (e.g., `chains`, `iter_warmup`,
+#'      `iter_sampling`, `thin`).
 #'
-#' @return A data.frame with one row per homeolog,
-#'      containing the following columns:
+#' @return A \code{data.frame} with one row per homeolog, containing:
 #'      \itemize{
 #'          \item `pvalue`: p-value from the LRT using normalized likelihoods.
-#'          \item `qvalue`: Adjusted p-value using the Benjamini-Hochberg method.
+#'          \item `qvalue`: Benjamini–Hochberg adjusted `pvalue`.
 #'          \item `raw_pvalue`: p-value from the LRT using raw likelihoods.
-#'          \item `raw_qvalue`: Adjusted raw p-value using the Benjamini-Hochberg method.
-#'          \item `theta0__*`: Posterior HER estimates shared across all conditions, where `*` denotes the subgenome name.
-#'          \item `theta__*__$`: Posterior HER estimates specific to each condition, where `*` denotes the subgenome name and `$` denotes the group name.
-#'          \item `Dmax`: Maximum absolute difference in HERs between groups.
-#'          \item `ORmax`: Maximum odds ratio of HERs between groups.
-#'          \item `logLik_H1`: Log-likelihood of the full model.
+#'          \item `raw_qvalue`: Benjamini–Hochberg adjusted `raw_pvalue`.
+#'          \item `D__$__*`: Difference in expression ratios for subgenome `$`
+#'                between the two groups represented by `*`.
+#'          \item `OR__$__*`: Odds ratio of expression ratios for subgenome `$`
+#'                between the two groups represented by `*`.
+#'          \item `Dmax`: Maximum absolute difference in expression ratios (`D__$__*`)
+#'                observed across all subgenomes and group comparisons.
+#'          \item `ORmax`: Maximum odds ratio in expression ratios (`OR__$__*`)
+#'                observed across all subgenomes and group comparisons.
+#'          \item `theta0__$`: Posterior expression ratio estimates shared
+#'                across all conditions, where `$` denotes the subgenome name.
+#'          \item `theta1__*__$`: Posterior expression ratio estimates specific
+#'                to each condition,
+#'                where `$` denotes the subgenome name and `*` denotes the group name.
 #'          \item `logLik_H0`: Log-likelihood of the reduced model.
+#'          \item `logLik_H1`: Log-likelihood of the full model.
 #'      }
+#'      All statistics are derived from MCMC samples
+#'      and may differ from those calculated directly from the RNA-Seq read counts.
 #'
 #' @references Sun J, Sese J, and Shimizu KK.
 #'      A moderated statistical test for detecting shifts in homeolog expression
@@ -402,15 +402,14 @@ hobit <- function(x,
     
     if (n_threads > 1) {
         cl <- makeCluster(n_threads)
-        #on.exit(stopCluster(cl), add = TRUE)
         clusterEvalQ(cl, {
             library(cmdstanr)
         })
         clusterExport(cl,
                       c('.hb.init_params', '.hb.init_params.hexp_ratios',
                         '.hb.est_dispersion_mx', '.hb.est_dispersion', 
-                        '.hb.format_data', '.hb.calc_p', '.hb.calc_dmax',
-                        '.hb.calc_ormax', '.hb.format_draws'),
+                        '.hb.format_data', '.hb.calc_p', '.hb.calc_shifts',
+                        '.hb.format_draws'),
                       envir = environment())
         registerDoParallel(cl)
         stats <- foreach(i = seq_along(data), .combine = 'rbind') %dopar% {
@@ -437,15 +436,19 @@ hobit <- function(x,
             proc_bar()
         })
     }
-    stats <- data.frame(stats)
+    stats_names <- colnames(stats)
+    colnames(stats) <- gsub("__\\.\\.__", "__", stats_names)
+    stats <- data.frame(stats, check.names = FALSE)
     stats$qvalue <- p.adjust(stats$pvalue, method = 'BH')
     stats$raw_qvalue <- p.adjust(stats$raw_pvalue, method = 'BH')
-    
     data.frame(gene = x@gene_names,
-               stats[, c('pvalue', 'qvalue', 'raw_pvalue', 'raw_qvalue',
-                         'Dmax', 'ORmax')],
-               stats[, grep('^theta__', colnames(stats))],
+               stats[, c('pvalue', 'qvalue', 'raw_pvalue', 'raw_qvalue')],
+               stats[, grep('^D__', colnames(stats))],
+               stats[, grep('^OR__', colnames(stats))],
+               stats[, c('Dmax', 'ORmax')],
                stats[, grep('^theta0__', colnames(stats))],
-               stats[, c('logLik_H1', 'logLik_H0')])
+               stats[, grep('^theta1__', colnames(stats))],
+               stats[, c('logLik_H0', 'logLik_H1')], 
+               check.names = FALSE)
 }
 

@@ -16,96 +16,99 @@ hobit(
 )
 }
 \arguments{
-\item{x}{An \linkS4class{ExpMX} class object containing normalized homeolog
-expression data (i.e., RNA-Seq read counts).}
+\item{x}{An \linkS4class{ExpMX} object containing normalized homeolog
+expression data (RNA-Seq read counts).}
 
 \item{use_Dirichlet}{Logical. Whether to apply a Dirichlet prior distribution
-for sampling HERs.}
+when sampling expression ratios.}
 
-\item{no_replicate}{Logical. Whether to treat all replicates as belonging to
-a single condition when estimating dispersion. Set to \code{TRUE} if the
-dataset lacks replicates to avoid errors during dispersion estimation.}
+\item{no_replicate}{Logical. If \code{TRUE}, all replicates are treated as a
+single condition when estimating dispersion. This avoids errors in cases
+where no biological replicates are available.}
 
-\item{eps}{Numeric. A small value specifying the minimum threshold for
-homeolog expression. Expression values below this threshold are replaced
-to avoid issues during MCMC sampling, particularly when drawing from a
-NB distribution with near-zero means.}
+\item{eps}{Numeric. Minimum threshold for homeolog expression. Values below
+this threshold are replaced with 0 to avoid instability during MCMC sampling,
+especially when fitting NB models with near-zero means.}
 
-\item{dist}{Character. The distribution to use for modeling expression data.
-Options are \code{'NB'} and \code{'ZINB'} (Zero-Inflated NB).}
+\item{dist}{Character. Distribution used to model expression data.
+Options: \code{'NB'} (negative binomial) or \code{'ZINB'} (zero-inflated negative
+binomial).}
 
-\item{n_threads}{Integer. Specifies the number of threads used for parallel
-processing of homeologs. This parallelization is applied at the homeolog
-level and is independent of the MCMC sampling process, which is
-controlled by the \code{parallel_chains} argument.
-The default value is taken from the global option \code{'mc.cores'},
-which can be set at the beginning of an R session using
-\code{options(mc.cores = 4)}. If \code{'mc.cores'} is not set, the default is 1.
-In general, setting a higher value for \code{n_threads} while keeping
-\code{parallel_chains = 1} often results in better performance compared
-to allocating more threads to \code{parallel_chains}.}
+\item{n_threads}{Integer. Number of threads for parallelizing computation
+across homeologs. This parallelization is independent of MCMC sampling,
+which is controlled by \code{parallel_chains}. Defaults to the global option
+\code{'mc.cores'}, or 1 if not set. In practice, using a larger \code{n_threads}
+with \code{parallel_chains = 1} typically reduces overall execution time
+compared to allocating more threads to MCMC chains.}
 
-\item{parallel_chains}{Integer. Specifies the number of threads used to
-parallelize MCMC sampling across multiple chains. This argument is
-passed directly to the \code{\link[cmdstanr]{sample}} function in the
-\pkg{cmdstanr} package.
-If both \code{n_threads} and \code{parallel_chains} are greater than 1, the total
-number of threads required will be \verb{n_threads × parallel_chains}.
-Make sure sufficient computational resources are available
-to support this configuration.}
+\item{parallel_chains}{Integer. Number of parallel MCMC chains. Passed
+directly to \code{\link[cmdstanr]{sample}} in the \pkg{cmdstanr} package.
+If both \code{n_threads} and \code{parallel_chains} exceed 1, the total number of
+threads used is \verb{n_threads × parallel_chains}. Ensure adequate resources
+are available before increasing both parameters.}
 
-\item{...}{Additional arguments passed to the \code{\link[cmdstanr]{sample}}
-function in the \pkg{cmdstanr} package
-(e.g., \code{chains}, \code{iter_warmup}, \code{iter_sampling}, \code{thin}).}
+\item{...}{Additional arguments passed to
+\code{\link[cmdstanr]{sample}} (e.g., \code{chains}, \code{iter_warmup},
+\code{iter_sampling}, \code{thin}).}
 }
 \value{
-A data.frame with one row per homeolog,
-containing the following columns:
+A \code{data.frame} with one row per homeolog, containing:
 \itemize{
 \item \code{pvalue}: p-value from the LRT using normalized likelihoods.
-\item \code{qvalue}: Adjusted p-value using the Benjamini-Hochberg method.
+\item \code{qvalue}: Benjamini–Hochberg adjusted \code{pvalue}.
 \item \code{raw_pvalue}: p-value from the LRT using raw likelihoods.
-\item \code{raw_qvalue}: Adjusted raw p-value using the Benjamini-Hochberg method.
-\item \verb{theta0__*}: Posterior HER estimates shared across all conditions, where \code{*} denotes the subgenome name.
-\item \verb{theta__*__$}: Posterior HER estimates specific to each condition, where \code{*} denotes the subgenome name and \code{$} denotes the group name.
-\item \code{Dmax}: Maximum absolute difference in HERs between groups.
-\item \code{ORmax}: Maximum odds ratio of HERs between groups.
-\item \code{logLik_H1}: Log-likelihood of the full model.
+\item \code{raw_qvalue}: Benjamini–Hochberg adjusted \code{raw_pvalue}.
+\item \verb{D__$__*}: Difference in expression ratios for subgenome \code{$}
+between the two groups represented by \code{*}.
+\item \verb{OR__$__*}: Odds ratio of expression ratios for subgenome \code{$}
+between the two groups represented by \code{*}.
+\item \code{Dmax}: Maximum absolute difference in expression ratios (\verb{D__$__*})
+observed across all subgenomes and group comparisons.
+\item \code{ORmax}: Maximum odds ratio in expression ratios (\verb{OR__$__*})
+observed across all subgenomes and group comparisons.
+\item \verb{theta0__$}: Posterior expression ratio estimates shared
+across all conditions, where \code{$} denotes the subgenome name.
+\item \verb{theta1__*__$}: Posterior expression ratio estimates specific
+to each condition,
+where \code{$} denotes the subgenome name and \code{*} denotes the group name.
 \item \code{logLik_H0}: Log-likelihood of the reduced model.
+\item \code{logLik_H1}: Log-likelihood of the full model.
 }
+All statistics are derived from MCMC samples
+and may differ from those calculated directly from the RNA-Seq read counts.
 }
 \description{
-A statistical method for detecting shifts in homeolog expressio ratios
-in allopolyploids across diverse conditions.
+A statistical framework for identifying changes in homeolog expression ratios
+across experimental conditions in allopolyploid species.
 }
 \details{
 HOBIT is a statistical test for detecting homeologs with differential
-homeolog expression ratios (HERs) across multiple experimental conditions
+homeolog expression ratios across multiple experimental conditions
 in allopolyploid species, using RNA-Seq read count data.
 It employs a likelihood ratio test (LRT) to compare two hierarchical models:
-a full model that allows HERs to vary among conditions, and a reduced model
-that assumes constant ratios across all conditions.
+a full model that allows HERs to vary among conditions,
+and a reduced model that assumes constant ratios across all conditions.
 
-HOBIT models homeolog expression using an negative binomial (NB) distribution.
-Specifically, the expression level of a homeolog on the \eqn{i}-th subgenome,
-denoted by \eqn{x_{i}}, is assumed to follow an NB distribution with mean
-\eqn{\mu\theta_{i}} and dispersion \eqn{\phi}, where \eqn{\mu} is total gene
-expression across all subgenomes, \eqn{\theta_{i}} is HER for the \eqn{i}-th
-subgenome, and \eqn{\phi} is dispersion parameter.
+Expression counts are modeled using a negative binomial (NB) distribution.
+Specifically, the expression level of a homeolog from the \eqn{i}-th subgenome,
+denoted \eqn{x_{i}}, is assumed to follow an NB distribution with mean
+\eqn{\mu \theta_{i}} and dispersion \eqn{\phi}, where \eqn{\mu} is the total
+gene expression across subgenomes, \eqn{\theta_{i}} is the proportion of
+expression attributable to the \eqn{i}-th subgenome, and \eqn{\phi} is the
+dispersion parameter:
 
 \deqn{
-x_{i} \sim NB(\mu\theta_{i}, \phi)
+x_{i} \sim NB(\mu \theta_{i}, \phi)
 }
 
-By default, HOBIT samples \eqn{\mu} and \eqn{\boldsymbol{\theta}} from
-uninformative prior distributions. The dispersion \eqn{\phi} is estimated
-using the \code{\link[edgeR]{estimateDisp}} function from the \pkg{edgeR}
-package.
+By default, \eqn{\mu} and \eqn{\boldsymbol{\theta}} are sampled from
+uninformative priors, while dispersion \eqn{\phi} is estimated using
+\code{\link[edgeR]{estimateDisp}} from the \pkg{edgeR} package.
 
-With these assumptions, HOBIT performs Markov chain Monte Carlo (MCMC)
-sampling to fit both full and reduced model and compute likelihoods between
-the two models. The \code{hobit()} function provides an end-to-end interface for
-parameter estimation, model fitting, likelihood computation, and the LRT.
+HOBIT uses Markov chain Monte Carlo (MCMC) sampling to fit both the full and
+reduced models and compute likelihoods for the LRT. The main entry point is
+the \code{hobit()} function, which performs parameter estimation, model fitting,
+likelihood computation, and hypothesis testing.
 }
 \examples{
 x <- sim_homeolog_counts(10)
