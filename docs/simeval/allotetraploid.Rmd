@@ -76,7 +76,7 @@ names(distr_plots)
 
 To display the distributions for each group, run as follows.
 
-```{r sim-2x-plotherdistr-plots, fig.cap="Distribution of homeolog expression ratios in two simulated groups.", fig.height=2.6}
+```{r sim-2x-plotherdistr-plots, fig.cap="Distribution of homeolog expression ratios in two simulated groups."}
 library(ggplot2)
 library(gridExtra)
 

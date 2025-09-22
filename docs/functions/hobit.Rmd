@@ -120,21 +120,25 @@ x_output <- hobit(x)
 
 ### Outputs
 
-The result (`x_output`) is a `data.frame` object, with one row per homeolog.
-The row order corresponds to the input,
+The result (`x_output`) is a `data.frame` with one row per homeolog.
+The row order matches the input,
 and the columns summarize the results of the statistical test.
+Note that all statistics are derived from MCMC samples
+and may differ from those calculated directly from the RNA-Seq read counts.
 
 - `gene`: Homeolog ID. The gene names defined in the first column of the mapping table.
-- `pvalue`: *p*-value from the LRT using normalized likelihoods.
-- `qvalue`: Adjusted *p*-value using the Benjamini-Hochberg method.
-- `raw_pvalue`: *p*-value from the LRT using raw likelihoods.
-- `raw_qvalue`: Adjusted raw *p*-value using the Benjamini-Hochberg method.
-- `Dmax`: Maximum absolute difference of homeolog expression ratios between conditions.
-- `ORmax`: Maximum odds ratio of homeolog expression ratios between conditions.
-- `theta0__<s>`: Posterior homeolog expression ratio estimates shared across all conditions, where `<s>` denotes the subgenome name. These parameters are used to compute the log-likelihood of the reduced model.
-- `theta__<s>__<g>`: Posterior homeolog expression ratio estimates specific to each condition, where `<s>` denotes the subgenome name and and `<g>` denotes the group name. These parameters are used to compute the log-likelihood of the full model.
-- `logLik_H1`: Log-likelihood of the full model.
+- `pvalue`: p-value from the LRT using normalized likelihoods.
+- `qvalue`: Benjamini–Hochberg adjusted `pvalue`.
+- `raw_pvalue`: p-value from the LRT using raw likelihoods.
+- `raw_qvalue`: Benjamini–Hochberg adjusted `raw_pvalue`.
+- `D__$__*`: Difference in expression ratios for subgenome `$` between the two groups represented by `*`.
+- `OR__$__*`: Odds ratio of expression ratios for subgenome `$` between the two groups represented by `*`.
+- `Dmax`: Maximum absolute difference in expression ratios (`D__$__*`) observed across all subgenomes and group comparisons.
+- `ORmax`: Maximum odds ratio in expression ratios (`OR__$__*`) observed across all subgenomes and group comparisons.
+- `theta0__$`: Posterior expression ratio estimates shared across all conditions, where `$` denotes the subgenome name.
+- `theta1__*__$`: Posterior expression ratio estimates specific to each condition, where `$` denotes the subgenome name and `*` denotes the group name.
 - `logLik_H0`: Log-likelihood of the reduced model.
+- `logLik_H1`: Log-likelihood of the full model.
 
 
 ```{r, fc-hobit-output-print}

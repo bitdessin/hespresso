@@ -32,7 +32,7 @@ jobs:
 
       - name: Install R packages
         run: |
-          Rscript -e 'install.packages(c("remotes", "bookdown", "pROC", "BiocManager"))'
+          Rscript -e 'install.packages(c("remotes", "gridExtra", "bookdown", "pROC", "BiocManager"))'
           Rscript -e 'BiocManager::install("edgeR")'
           Rscript -e 'install.packages("cmdstanr", repos = c("https://stan-dev.r-universe.dev", getOption("repos")))'
           Rscript -e 'cmdstanr::install_cmdstan()'

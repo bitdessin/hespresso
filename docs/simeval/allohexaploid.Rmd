@@ -39,7 +39,7 @@ follows a similar workflow as for allotetraploids.
 To display the distribution of expression ratios for the first subgenome,
 run as follows.
 
-```{r sim-3x-plotherdistr, fig.cap="Distribution of homeolog expression ratios for the first subgenome in a simulated allohexaploid across two groups.", fig.height=2.6}
+```{r sim-3x-plotherdistr, fig.cap="Distribution of homeolog expression ratios for the first subgenome in a simulated allohexaploid across two groups."}
 x <- sim_homeolog_counts(n_subgenomes = 3)
 distr_plots_1 <- plot_HER_distr(x)
 names(distr_plots_1)
@@ -54,7 +54,7 @@ grid.arrange(distr_plots_1[["group_1"]] + ggtitle("group_1 on 1st subgenome"),
 Users can specify which subgenome to use for calculating expression ratios with the `base` argument.
 For example, to visualize ratios for the second or third subgenome, run as follows.
 
-```{r sim-3x-plotherdistr-base, fig.cap="Distribution of homeolog expression ratios for all subgenomes in a simulated allohexaploid across two groups.", fig.height=4.8}
+```{r sim-3x-plotherdistr-base, fig.cap="Distribution of homeolog expression ratios for all subgenomes in a simulated allohexaploid across two groups."}
 distr_plots_2 <- plot_HER_distr(x, base = 2)
 distr_plots_3 <- plot_HER_distr(x, base = 3)
 
