@@ -1,6 +1,6 @@
 Package: hespresso
-Title: Methods for Detecting Shifts in Homeolog Expression Ratios in Allopolyploids
-Version: 1.0.0
+Title: LRT for Detecting Shifts in Homeolog Expression Ratios in Allopolyploids
+Version: 1.0.1
 Authors@R: 
     c(person("Jianqiang", "Sun",
              email = "sun@bitdessin.dev",
@@ -14,8 +14,9 @@ Description:
     using RNA-Seq read count data.
     Take a sip of hespresso, and start your analysis strong!
 Depends: R (>= 4.5)
-Imports: stats, utils, methods, locfit, parallel, foreach, doParallel,
-        progressr, ggplot2, edgeR, cmdstanr
+Imports: stats, utils, methods, locfit, ggplot2,
+         progress, progressr, future, future.apply,
+         edgeR, cmdstanr
 Suggests: testthat, gridExtra, UpSetR, pROC
 License: MIT + file LICENSE
 Encoding: UTF-8

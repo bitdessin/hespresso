@@ -68,7 +68,7 @@ observed across all subgenomes and group comparisons.
 observed across all subgenomes and group comparisons.
 \item \verb{theta0__$}: Posterior expression ratio estimates shared
 across all conditions, where \code{$} denotes the subgenome name.
-\item \verb{theta1__*__$}: Posterior expression ratio estimates specific
+\item \verb{theta1__$__*}: Posterior expression ratio estimates specific
 to each condition,
 where \code{$} denotes the subgenome name and \code{*} denotes the group name.
 \item \code{logLik_H0}: Log-likelihood of the reduced model.

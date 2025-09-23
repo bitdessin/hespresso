@@ -168,11 +168,11 @@
                                 mean = m[invalid_idx], sd = s[invalid_idx])
         invalid_idx[invalid_idx] <- (y[invalid_idx] < 0) | (y[invalid_idx] > cutoff[invalid_idx])
         
-        if (n_tries > 100) {
+        if (n_tries > 1000) {
             gene_ids <- seq_along(meta_is_valid)
             err_ids <- gene_ids[meta_is_valid][invalid_idx]
             stop('HomeoRoq attempted to sample ratios/counts ',
-                 'from a truncated normal distribution up to 100 times. ',
+                 'from a truncated normal distribution up to 1000 times. ',
                  'However, it failed to sample valid samples. ',
                  'Try removing the homeologs on rows ',
                  paste0(err_ids, sep = ', ', collapse = ''),
@@ -262,15 +262,16 @@
 #' A statistical method for detecting shifts in homeolog expression ratios
 #' among two subgenomes in allopolyploids across two groups.
 #' 
-#' HomeoRoq estimates the probability that homeolog expression ratios (HERs)
+#' HomeoRoq estimates the probability that homeolog expression ratios
 #' remain constant between two groups using RNA-Seq read count data for
 #' each homeolog. Since this probability cannot be calculated analytically,
 #' HomeoRoq uses a Bayesian framework and performs Markov chain Monte Carlo (MCMC)
-#' sampling to estimate the distribution of HERs under the null hypothesis of
-#' no change between conditions.
+#' sampling to estimate the distribution of homeolog expression ratios
+#' under the null hypothesis of no change between conditions.
 #' 
-#' The `hobit()` function provides a comprehensive interface for detecting shifts
-#' in HERs across conditions. By default, it performs 10,000 sampling iterations
+#' The `homeoroq()` function provides a comprehensive interface
+#' for detecting shifts in homeolog expression ratios across conditions.
+#' By default, it performs 10,000 sampling iterations
 #' per MCMC chain (`iter_sampling = 1e4`) across 4 chains (`chians = 4`).
 #' However, for robust and reproducible estimation of statistical significance
 #' (i.e., _p_-values), it is recommended to conduct multiple independent sampling runs,
@@ -296,8 +297,8 @@
 #'          \item `pvalue`: Raw p-value from the statistical test.
 #'          \item `qvalue`: Adjusted p-value using the Benjamini-Hochberg method.
 #'          \item `sumexp__*__$`: Total read counts for subgenome `$` under condition `*`.
-#'          \item `ratio__*__$`: HERs for subgenome `$` under condition `*`.
-#'          \item `ratio_sd`: Standard deviation of HERs calculated from observed counts.
+#'          \item `ratio__*__$`: Homeolog expression ratio for subgenome `$` under condition `*`.
+#'          \item `ratio_sd`: Standard deviation of homeolog expression ratios calculated from observed counts.
 #'      }
 #'
 #' @references Akama S, Shimizu-Inatsugi R, Shimizu KK, Sese J.
@@ -314,10 +315,10 @@
 #' 
 #' @importFrom stats p.adjust
 #' @importFrom locfit locfit lp
-#' @importFrom progressr progressor with_progress
-#' @importFrom parallel makeCluster clusterExport clusterEvalQ stopCluster
-#' @importFrom doParallel registerDoParallel
-#' @importFrom foreach foreach %dopar%
+#' @importFrom future.apply future_vapply
+#' @importFrom future plan multisession sequential
+#' @importFrom progressr progressor with_progress handlers
+#' @importFrom progress progress_bar
 #' @export
 homeoroq <- function(x,
                      chains = 4,
@@ -327,32 +328,20 @@ homeoroq <- function(x,
         stop('HomeoRoq only supports testing allopolyploids',
              'with two subgenomes under two conditions.')
     
-    if (n_threads > 1) {
-        cl <- makeCluster(n_threads)
-        #on.exit(stopCluster(cl), add = TRUE)
-        clusterEvalQ(cl, {
-            library(locfit)
-        })
-        clusterExport(cl,
-                      c('.hq.homeoroq', '.hq.sigChangeMH', '.hq.calc_obscounts_stats',
-                        '.hq.rnorm', '.hq.estimate_var', '.hq.calc_pval',
-                        '.hq.data.OR', '.hq.data.OC', '.hq.data.OD', '.hq.data.format'),
-                      envir = environment())
-        registerDoParallel(cl)
-        pvalues <- foreach(i = seq_len(chains), .combine = 'cbind') %dopar% {
-            message(sprintf("Running iteration %d/%d", i, chains))
-            .hq.homeoroq(x, iter_sampling, NULL)
-        }
-        stopCluster(cl)
-    } else {
-        with_progress({
-            proc_bar <- progressor(steps = chains * iter_sampling)
-            pvalues <- matrix(NA, nrow = nrow(x@data[[1]]), ncol = chains)
-            for (i in seq_len(chains)) {
-                pvalues[, i] <- .hq.homeoroq(x, iter_sampling, proc_bar)
-            }
-        })
-    }
+    plan(multisession, workers = n_threads)
+    handlers("progress")
+    with_progress({
+        pb <- progressor(chains)
+        pvalues <- future_vapply(seq_len(chains), function(i) {
+                outputs <- .hq.homeoroq(x, iter_sampling, NULL)
+                pb()
+                outputs
+            },
+            FUN.VALUE = numeric(nrow(x@data[[1]])),
+            future.seed = TRUE,
+            future.packages = c('locfit'))
+    })
+    plan(sequential)
     
     pvalues <- rowMeans(pvalues)
     data.frame(gene = x@gene_names,

@@ -263,9 +263,12 @@
            raw_qvalue = NA,
            pvalue = .hb.calc_p(log_lik, inputs, TRUE),
            qvalue = NA)
-    v_mat <- matrix(v, nrow = 1)
-    colnames(v_mat) <- names(v)
-    v_mat
+    
+    
+    #v_mat <- matrix(v, nrow = 1)
+    #colnames(v_mat) <- names(v)
+    #v_mat
+    v
 }
 
 
@@ -346,7 +349,7 @@
 #'                observed across all subgenomes and group comparisons.
 #'          \item `theta0__$`: Posterior expression ratio estimates shared
 #'                across all conditions, where `$` denotes the subgenome name.
-#'          \item `theta1__*__$`: Posterior expression ratio estimates specific
+#'          \item `theta1__$__*`: Posterior expression ratio estimates specific
 #'                to each condition,
 #'                where `$` denotes the subgenome name and `*` denotes the group name.
 #'          \item `logLik_H0`: Log-likelihood of the reduced model.
@@ -372,10 +375,10 @@
 #' x_output <- hobit(x, n_threads = 8, parallel_chains = 1, iter_warmup = 100, iter_sampling = 100)
 #' 
 #' @importFrom stats p.adjust
-#' @importFrom progressr progressor with_progress
-#' @importFrom parallel makeCluster clusterExport clusterEvalQ stopCluster
-#' @importFrom doParallel registerDoParallel
-#' @importFrom foreach foreach %dopar%
+#' @importFrom future plan multisession sequential
+#' @importFrom future.apply future_vapply
+#' @importFrom progressr progressor with_progress handlers
+#' @importFrom progress progress_bar
 #' @importFrom cmdstanr cmdstan_model 
 #' @export
 hobit <- function(x,
@@ -386,59 +389,64 @@ hobit <- function(x,
                   n_threads = getOption('mc.cores', 1),
                   parallel_chains = 1,
                   ...) {
-    # defalting parameters
     dist <- match.arg(dist)
+    if (any(grepl("__\\.\\.__", x@exp_design$group))) {
+        warning('One or more group names contain the reserved string "__..__".',
+                'Please rename the group(s) and try again.')
+        user_ans <- readline("Would you like to rename them now? (y/n): ")
+        if (tolower(user_ans) == "y") {
+            message('Please rename the group name(s) and try again.')
+            return(NULL)
+        } else if (tolower(user_ans) == "n") {
+            message('Continuing the program despite reserved group names.')
+        } else {
+            message('Invalid input. Continuing the program by default.')
+        }
+    }
+    
     input_params <- list(...)
     input_params$parallel_chains <- parallel_chains
     
-    # format data
     data <- .hb.format_data(x, use_Dirichlet, eps, no_replicate)
     
-    # STAN
     stan_code_fpath <- system.file(package = 'hespresso', 'extdata',
                                    paste0('HOBIT.', dist, '.stan'))
     m <- cmdstan_model(stan_file = stan_code_fpath,
                        dir = tempdir(), quiet = TRUE, compile = TRUE)
     
-    if (n_threads > 1) {
-        cl <- makeCluster(n_threads)
-        clusterEvalQ(cl, {
-            library(cmdstanr)
-        })
-        clusterExport(cl,
-                      c('.hb.init_params', '.hb.init_params.hexp_ratios',
-                        '.hb.est_dispersion_mx', '.hb.est_dispersion', 
-                        '.hb.format_data', '.hb.calc_p', '.hb.calc_shifts',
-                        '.hb.format_draws'),
-                      envir = environment())
-        registerDoParallel(cl)
-        stats <- foreach(i = seq_along(data), .combine = 'rbind') %dopar% {
+    # calculate n of outputs
+    .input_params <- input_params
+    .input_params$data <- data[[1]]
+    .input_params$data$.META <- NULL
+    .outputs <- do.call(m$sample, .input_params)
+    .outputs_fmt <- .hb.format_draws(data[[1]],
+                        .outputs$draws(inc_warmup = FALSE, format = 'matrix'))
+    n_stats <- length(.outputs_fmt)
+    
+    # HOBIT
+    plan(multisession, workers = n_threads)
+    handlers("progress")
+    if (FALSE) progress_bar
+    with_progress({
+        pb <- progressor(length(data))
+        stats <- future_vapply(seq_along(data), function(i) {
             input_params$data <- data[[i]]
             input_params$data$.META <- NULL
             outputs <- do.call(m$sample, input_params)
-            .hb.format_draws(data[[i]],
-                             outputs$draws(inc_warmup = FALSE, format = 'matrix'))
-        }
-        stopCluster(cl)
-    } else {
-        stats <- NULL
-        with_progress({
-            proc_bar <- progressor(steps = length(data))
-            for (i in seq_along(data)) {
-                input_params$data <- data[[i]]
-                input_params$data$.META <- NULL
-                outputs <- do.call(m$sample, input_params)
-                stats <-rbind(stats,
-                              .hb.format_draws(data[[i]],
-                                               outputs$draws(inc_warmup = FALSE,
-                                                             format = 'matrix')))
-            }
-            proc_bar()
-        })
-    }
-    stats_names <- colnames(stats)
-    colnames(stats) <- gsub("__\\.\\.__", "__", stats_names)
-    stats <- data.frame(stats, check.names = FALSE)
+            outputs_fmt <- .hb.format_draws(data[[i]],
+                                    outputs$draws(inc_warmup = FALSE, format = 'matrix'))
+            pb()
+            outputs_fmt
+        },
+        FUN.VALUE = numeric(n_stats),
+        future.seed = TRUE,
+        future.packages = c('cmdstanr'))
+    })
+    plan(sequential)
+
+    stats_names <- rownames(stats)
+    rownames(stats) <- gsub("__\\.\\.__", "__", stats_names)
+    stats <- data.frame(t(stats), check.names = FALSE)
     stats$qvalue <- p.adjust(stats$pvalue, method = 'BH')
     stats$raw_qvalue <- p.adjust(stats$raw_pvalue, method = 'BH')
     data.frame(gene = x@gene_names,
@@ -451,4 +459,3 @@ hobit <- function(x,
                stats[, c('logLik_H0', 'logLik_H1')], 
                check.names = FALSE)
 }
-

@@ -34,8 +34,8 @@ containing the following columns:
 \item \code{pvalue}: Raw p-value from the statistical test.
 \item \code{qvalue}: Adjusted p-value using the Benjamini-Hochberg method.
 \item \verb{sumexp__*__$}: Total read counts for subgenome \code{$} under condition \code{*}.
-\item \verb{ratio__*__$}: HERs for subgenome \code{$} under condition \code{*}.
-\item \code{ratio_sd}: Standard deviation of HERs calculated from observed counts.
+\item \verb{ratio__*__$}: Homeolog expression ratio for subgenome \code{$} under condition \code{*}.
+\item \code{ratio_sd}: Standard deviation of homeolog expression ratios calculated from observed counts.
 }
 }
 \description{
@@ -43,15 +43,16 @@ A statistical method for detecting shifts in homeolog expression ratios
 among two subgenomes in allopolyploids across two groups.
 }
 \details{
-HomeoRoq estimates the probability that homeolog expression ratios (HERs)
+HomeoRoq estimates the probability that homeolog expression ratios
 remain constant between two groups using RNA-Seq read count data for
 each homeolog. Since this probability cannot be calculated analytically,
 HomeoRoq uses a Bayesian framework and performs Markov chain Monte Carlo (MCMC)
-sampling to estimate the distribution of HERs under the null hypothesis of
-no change between conditions.
+sampling to estimate the distribution of homeolog expression ratios
+under the null hypothesis of no change between conditions.
 
-The \code{hobit()} function provides a comprehensive interface for detecting shifts
-in HERs across conditions. By default, it performs 10,000 sampling iterations
+The \code{homeoroq()} function provides a comprehensive interface
+for detecting shifts in homeolog expression ratios across conditions.
+By default, it performs 10,000 sampling iterations
 per MCMC chain (\code{iter_sampling = 1e4}) across 4 chains (\code{chians = 4}).
 However, for robust and reproducible estimation of statistical significance
 (i.e., \emph{p}-values), it is recommended to conduct multiple independent sampling runs,
