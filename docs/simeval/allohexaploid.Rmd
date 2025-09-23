@@ -4,7 +4,7 @@
 source("../_config.R")
 ```
 
-To simulate read counts for an allohexaploid with three subgenomes, set `n_subgenomes` = 3.
+To simulate read counts for an allohexaploid with three subgenomes, set `n_subgenomes = 3`.
 In this case, the mean and dispersion parameters are derived from real RNA-Seq data
 of allohexaploid wheat [@ref_wheatseedmatrix].
 
@@ -58,9 +58,12 @@ For example, to visualize ratios for the second or third subgenome, run as follo
 distr_plots_2 <- plot_HER_distr(x, base = 2)
 distr_plots_3 <- plot_HER_distr(x, base = 3)
 
-grid.arrange(distr_plots_1[["group_1"]] + ggtitle("group_1 on #1"), distr_plots_1[["group_2"]] + ggtitle("group_2 on #1"),
-             distr_plots_2[["group_1"]] + ggtitle("group_1 on #2"), distr_plots_2[["group_2"]] + ggtitle("group_2 on #2"),
-             distr_plots_3[["group_1"]] + ggtitle("group_1 on #3"), distr_plots_3[["group_2"]] + ggtitle("group_2 on #3"),
+grid.arrange(distr_plots_1[["group_1"]] + ggtitle("group_1 on #1"),
+             distr_plots_1[["group_2"]] + ggtitle("group_2 on #1"),
+             distr_plots_2[["group_1"]] + ggtitle("group_1 on #2"),
+             distr_plots_2[["group_2"]] + ggtitle("group_2 on #2"),
+             distr_plots_3[["group_1"]] + ggtitle("group_1 on #3"),
+             distr_plots_3[["group_2"]] + ggtitle("group_2 on #3"),
              ncol = 2)
 ```
 

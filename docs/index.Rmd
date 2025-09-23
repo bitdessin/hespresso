@@ -48,16 +48,16 @@ derived from _Cardamine hirsuta_ (2*n* = 2*x* = 16, HH) and
 _Cardamine amara_ (2*n* = 2*x* = 16, AA),
 displays distinct patterns of homeolog expression ratios
 across ecological habitats [@ref_cflex_ecohabitats].
+Therefore, detecting such changes is essential for understanding
+the regulatory mechanisms underlying allopolyploid evolution and adaptation.
 
-Detecting such changes is therefore essential
-for understanding the regulatory mechanisms underlying allopolyploid evolution and adaptation,
-and the `r pkg("hespresso")` package provides a means
+The `r pkg("hespresso")` package provides statistical tools
 to detect homeologs with shifted expression ratios
-across diverse conditions using RNA-Seq data from allopolyploids.
-It implements two methods, HOBIT [@ref_hobit] and HomeoRoq [@ref_homeoroq].
-HOBIT accommodates a wide range of polyploid systems,
-including those with uneven or complex subgenome compositions,
-and supports comparisons across multiple conditions.
+across diverse experimental conditions using RNA-Seq data from allopolyploid species.
+It implements two methods: HOBIT [@ref_hobit] and HomeoRoq [@ref_homeoroq].
+HOBIT offers broad applicability, accommodating polyploid systems
+with uneven or complex subgenome compositions,
+and supports hypothesis testing across multiple conditions.
 In contrast, HomeoRoq is tailored for detecting ratio shifts between two conditions in allotetraploids.
 Benchmarking with simulated data indicates that
 HOBIT achieves a more balanced trade-off between precision and recall,

@@ -1,5 +1,5 @@
-# hespresso: Methods for detecting shifts in homeolog expression ratios in allopolyploids
-    
+# hespresso: LRT for Detecting Shifts in Homeolog Expression Ratios in Allopolyploids
+
 _hespresso_ blends homeolog expression with espresso, capturing
 the essence of power, energy, and focus in homeolog expression analysis.
 It provides statistical tests for detecting shifts in homeolog expression

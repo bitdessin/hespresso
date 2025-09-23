@@ -18,13 +18,15 @@ RNA-Seq studies on *C. insueta* leaflets floating on water suggested that
 
 Here, we demonstrate how to detect homeologs with changing expression ratios across time points using HOBIT,
 similar to an ANOVA approach.
-We use a sample dataset containing 1,000 homeologs (`c_insueta.mini.txt.gz`) randomly selected from the original experiment,
+We use a sample dataset containing 500 homeolog pairs (`c_insueta.mini.txt.gz`) randomly selected from the original experiment,
 although the full dataset is available in the [data](https://github.com/bitdessin/hespresso/tree/main/docs) directory
 for users who wish to analyze it.
-This data span nine time points following leaf submergence and can be loaded using the following code.
+This data span nine time points (0, 2, 4, 8, 12, 24, 48, 72, and 96 hours)
+following leaf submergence and can be loaded using the following code.
 
 ```{r tt-cins-load-counts}
-gexp <- read.table("../data/c_insueta.mini.txt.gz", header = TRUE, sep = "\t", row.names = 1)
+gexp <- read.table("../data/c_insueta.mini.txt.gz",
+                   header = TRUE, sep = "\t", row.names = 1)
 head(gexp)
 group <- c("T00", "T02", "T04", "T08", "T12", "T24", "T48", "T72", "T96")
 ```
@@ -35,7 +37,8 @@ This file is tab-separated,
 with the first and second columns representing genes from *C. rivularis* and *C. amara*, respectively.
 
 ```{r tt-cins-load-mappingtable}
-mapping_table <- read.table("../data/c_insueta.homeolog.txt.gz", header = TRUE, sep = "\t")
+mapping_table <- read.table("../data/c_insueta.homeolog.txt.gz",
+                            header = TRUE, sep = "\t")
 head(mapping_table)
 ```
 
@@ -90,8 +93,8 @@ which requires multiple replicates.
 x_output <- hobit(x, no_replicate = TRUE)
 ```
 
-The test takes approximately five minutes to analyze 1,000 homeolog pairs using eight threads,
-although runtime may vary depending on hardware performance.
+This step takes approximately five minutes
+using eight threads and may vary depending on hardware performance.
 
 ```{r tt-cins-hobit-output}
 head(x_output)
@@ -99,6 +102,11 @@ head(x_output)
 
 
 ### Analysis Environment
+
+```{r tt-cins-option-width, include=FALSE}
+options(width = 120)
+```
+
 
 ```{r tt-cins-sessioninfo}
 sessionInfo()

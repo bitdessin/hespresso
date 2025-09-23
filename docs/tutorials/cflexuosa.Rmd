@@ -16,7 +16,8 @@ The allopolyploid *C. flexuosa* thrives across a wide range of ecological habita
 Akiyama et al. conducted an RNA-Seq experiment using leaf samples of *C. flexuosa*
 collected from wet and dry habitats across three different days [@ref_cflex_ecohabitats].
 Each habitat–date combination included two or three biological replicates.
-Homeolog expression levels were quantified using read counts
+In the original study,
+homeolog expression levels were quantified using read counts
 processed through the HomeoRoq sorting pipeline [@ref_homeoroq].
 Analysis of homeolog expression ratios revealed that
 a small percentage of homeologs in *C. flexuosa* exhibit shifts
@@ -26,13 +27,14 @@ in expression depending on environmental differences, wet and dry.
 
 In this example, we demonstrate how to use HOBIT and HomeoRoq to analyze the *C. flexuosa* dataset.
 To reduce computation time, we focus on samples collected on May 16, 2013,
-and randomly select 1,000 homeolog pairs (`c_flexuosa.0516.mini.txt.gz`).
+and randomly select 500 homeolog pairs (`c_flexuosa.0516.mini.txt.gz`).
 Users can, however, analyze the full dataset or samples from other dates.
 These datasets are available in the [data](https://github.com/bitdessin/hespresso/tree/main/docs/data) directory,
 and the same workflow can be applied.
 
 ```{r tt-cflex-load-counts}
-gexp <- read.table("../data/c_flexuosa.0516.mini.txt.gz", header = TRUE, sep = "\t", row.names = 1)
+gexp <- read.table("../data/c_flexuosa.0516.mini.txt.gz",
+                   header = TRUE, sep = "\t", row.names = 1)
 head(gexp)
 group <- c("wet", "wet", "wet", "dry", "dry", "dry")
 ```
@@ -43,7 +45,8 @@ This table is a tab-separated file in which the first and second columns
 represent gene names from *C. hirsuta* and *C. amara*, respectively.
 
 ```{r tt-cflex-load-mappingtable}
-mapping_table <- read.table("../data/c_flexuosa.homeolog.txt.gz", header = TRUE, sep = "\t")
+mapping_table <- read.table("../data/c_flexuosa.homeolog.txt.gz",
+                            header = TRUE, sep = "\t")
 head(mapping_table)
 ```
 
@@ -87,7 +90,6 @@ run the following code.
 ```{r tt-cflex-viz-distr-show, fig.cap="Distribution of homeolog expression ratios in _C. flexuosa_ under wet and dry habitats."}
 library(ggplot2)
 library(gridExtra)
-
 grid.arrange(distr_plots[["wet"]] + ggtitle("wet"),
              distr_plots[["dry"]] + ggtitle("dry"),
              ncol = 2)
@@ -101,7 +103,8 @@ if no irregularities are observed, users can proceed to apply the statistical te
 
 HOBIT can be executed using the `hobit()` function, which performs a statistical test
 to detect homeologs with shifts in expression ratios between wet and dry habitats.
-Analyzing 1,000 homeolog pairs with eight threads takes approximately five minutes.
+This step takes approximately five minutes
+using eight threads and may vary depending on hardware performance.
 
 ```{r tt-cflex-hobit, results="hide", message=FALSE, warning=FALSE}
 x_output <- hobit(x)
@@ -161,7 +164,6 @@ sig_homeologs <- list(
     HOBIT = x_output$gene[x_output$qvalue < 0.01],
     HomeoRoq = x_homeoroq$gene[x_homeoroq$qvalue < 0.01]
 )
-
 upset(fromList(sig_homeologs))
 ```
 
@@ -180,6 +182,10 @@ plot_HER(x, label = is_sig)
 
 
 ### Analysis Environment
+
+```{r tt-cflex-option-width, include=FALSE}
+options(width = 120)
+```
 
 ```{r tt-cflex-sessioninfo}
 sessionInfo()

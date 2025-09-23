@@ -58,7 +58,8 @@ The gene expression matrix should be a data.frame or matrix,
 with row names corresponding to gene names.
 
 ```{r fc-hobit-input-preparation-gexp}
-gexp <- read.table("../data/c_flexuosa.0516.mini.txt.gz", header = TRUE, sep = "\t", row.names = 1)
+gexp <- read.table("../data/c_flexuosa.0516.mini.txt.gz",
+                   header = TRUE, sep = "\t", row.names = 1)
 head(gexp)
 ```
 
@@ -76,7 +77,8 @@ It is assumed that all gene names in both columns appear
 in the row names of gene expression matrix (`gexp`).
 
 ```{r fc-hobit-input-preparation-group}
-mapping_table <- read.table("../data/c_flexuosa.homeolog.txt.gz", header = TRUE, sep = "\t")
+mapping_table <- read.table("../data/c_flexuosa.homeolog.txt.gz",
+                            header = TRUE, sep = "\t")
 head(mapping_table)
 ```
 
@@ -120,11 +122,16 @@ x_output <- hobit(x)
 
 ### Outputs
 
-The result (`x_output`) is a `data.frame` with one row per homeolog.
+The result (`x_output`) is a data frame with one row per homeolog.
 The row order matches the input,
 and the columns summarize the results of the statistical test.
-Note that all statistics are derived from MCMC samples
-and may differ from those calculated directly from the RNA-Seq read counts.
+The output includes the following statistics.
+All statistics are derived from MCMC samples and
+may differ from those calculated directly from the observed RNA-Seq read counts.
+
+```{r, fc-hobit-output-print}
+head(x_output)
+```
 
 - `gene`: Homeolog ID. The gene names defined in the first column of the mapping table.
 - `pvalue`: p-value from the LRT using normalized likelihoods.
@@ -136,29 +143,26 @@ and may differ from those calculated directly from the RNA-Seq read counts.
 - `Dmax`: Maximum absolute difference in expression ratios (`D__$__*`) observed across all subgenomes and group comparisons.
 - `ORmax`: Maximum odds ratio in expression ratios (`OR__$__*`) observed across all subgenomes and group comparisons.
 - `theta0__$`: Posterior expression ratio estimates shared across all conditions, where `$` denotes the subgenome name.
-- `theta1__*__$`: Posterior expression ratio estimates specific to each condition, where `$` denotes the subgenome name and `*` denotes the group name.
+- `theta1__$__*`: Posterior expression ratio estimates specific to each condition, where `$` denotes the subgenome name and `*` denotes the group name.
 - `logLik_H0`: Log-likelihood of the reduced model.
 - `logLik_H1`: Log-likelihood of the full model.
 
 
-```{r, fc-hobit-output-print}
-head(x_output)
-```
 
 
 ### Options
 
-#### Basic Options
+#### Parallelization Options
 
 Below is a basic example of running the `hobit()` function.
+By default, `hobit()` uses multiple threads,
+defined by the `mc.cores` option in the global environment, for MCMC sampling.
+If `mc.cores` is not set, it defaults to using a single thread.
 
 ```{r fc-hobit-basicopts-default, eval=FALSE}
 x_output <- hobit(x)
 ```
 
-By default, `hobit()` uses multiple threads,
-defined by the `mc.cores` option in the global environment, for MCMC sampling,
-If `mc.cores` is not set, it defaults to using a single thread.
 Users can customize the number of threads to accelerate the testing process
 by either setting `mc.cores` (e.g., `options(mc.cores = 8)`)
 or specifying the `n_threads` argument directly. For example:
@@ -242,7 +246,7 @@ the following are particularly important.
 - `adapt_delta`: Target acceptance rate for the sampler (default: `0.8`). Higher values improve stability but may reduce speed.
 
 The following example increases the number of chains and iterations to improve stability and convergence,
-though at the cost of longer execution times:
+though at the cost of longer execution times.
 
 ```{r fc-hobit-mcmcopts-iters, eval=FALSE}
 x_output <- hobit(x, chains = 8, iter_warmup = 2000, iter_sampling = 10000)

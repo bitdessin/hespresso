@@ -6,12 +6,15 @@ source("../_config.R")
 
 ### Introduction
 
-Bread wheat, *Triticum aestivum*, is one of the world’s most important crops
+Bread wheat, *Triticum aestivum* (2n = 6x = 42, AABBDD),
+is one of the world’s most important crops
 and also serves as a model for studying allopolyploid species.
 It originated through hybridization among three diploid progenitor species,
-Triticum urartu (AA), a species related to *Aegilops speltoides* (BB),
-and *Aegilops tauschii* (DD), and contains three distinct subgenomes
-[@ref_wheat_origin_1; @ref_wheat_origin_2; @ref_wheatgenome].
+*Triticum urartu* (2n = 2x = 14, AA), 
+an unknown species related to  *Aegilops speltoides* (2n = 2x = 14; SS,
+which is thought to be the progenitor of BB),
+and *Aegilops tauschii* (2n = 2x = 14, DD),
+and contains three distinct subgenomes [@ref_wheat_origin_1; @ref_wheat_origin_2; @ref_wheatgenome].
 To demonstrate the applicability of HOBIT to allohexaploid species,
 we present a case study using wheat RNA-Seq data
 to detect homeologs with shifts in expression ratios between two tissues,
@@ -20,23 +23,25 @@ shoot apex and leaf [@ref_wheatseedmatrix].
 
 ### Data Preparation
 
-In this example, 1,000 homeolog triads were randomly selected from the original dataset.
+In this example, 500 homeolog triads were randomly selected from the original dataset.
 The expression data can be loaded from the following file (`t_aestivum.w20.mini.txt.gz`).
 Users may also choose to load the full dataset, which is stored
 in the [data](https://github.com/bitdessin/hespresso/tree/main/docs/data) directory, for analysis.
 
 ```{r tt-wheat-load-counts}
-gexp <- read.table("../data/t_aestivum.w20.mini.txt.gz", header = TRUE, sep = "\t", row.names = 1)
+gexp <- read.table("../data/t_aestivum.w20.mini.txt.gz",
+                   header = TRUE, sep = "\t", row.names = 1)
 head(gexp)
 group <- c("apex", "apex", "apex", "leaf", "leaf", "leaf")
 ```
 
 Next, load the mapping table that links each gene to its corresponding homeolog triads.
-Since wheat has three subgenomes, the table contains three columns,
-with each column representing one subgenome.
+Since wheat has three subgenomes (i.e., A, B, and D),
+the table contains three columns, with each column representing one subgenome.
 
 ```{r tt-wheat-load-mappingtable}
-mapping_table <- read.table("../data/t_aestivum.homeolog.txt.gz", header = TRUE, sep = "\t")
+mapping_table <- read.table("../data/t_aestivum.homeolog.txt.gz",
+                            header = TRUE, sep = "\t")
 head(mapping_table)
 ```
 
@@ -72,7 +77,6 @@ names(distr_plots_A)
 
 library(ggplot2)
 library(gridExtra)
-
 grid.arrange(distr_plots_A[["apex"]] + ggtitle("apex on A subgenome"),
              distr_plots_A[["leaf"]] + ggtitle("leaf on A subgenome"),
              ncol = 2)
@@ -88,9 +92,12 @@ For example, to calculate the ratios for the second and third subgenomes
 distr_plots_B <- plot_HER_distr(x, base = 2)
 distr_plots_D <- plot_HER_distr(x, base = 3)
 
-grid.arrange(distr_plots_A[["apex"]] + ggtitle("apex on A"), distr_plots_A[["leaf"]] + ggtitle("leaf on A"),
-             distr_plots_B[["apex"]] + ggtitle("apex on B"), distr_plots_B[["leaf"]] + ggtitle("leaf on B"),
-             distr_plots_D[["apex"]] + ggtitle("apex on D"), distr_plots_D[["leaf"]] + ggtitle("leaf on D"),
+grid.arrange(distr_plots_A[["apex"]] + ggtitle("apex on A"),
+             distr_plots_A[["leaf"]] + ggtitle("leaf on A"),
+             distr_plots_B[["apex"]] + ggtitle("apex on B"),
+             distr_plots_B[["leaf"]] + ggtitle("leaf on B"),
+             distr_plots_D[["apex"]] + ggtitle("apex on D"),
+             distr_plots_D[["leaf"]] + ggtitle("leaf on D"),
              ncol = 2)
 ```
 
@@ -169,6 +176,10 @@ head(x_ABvsD_output[order(x_ABvsD_output$pvalue), ])
 
 
 ### Analysis Environment
+
+```{r tt-wheat-option-width, include=FALSE}
+options(width = 120)
+```
 
 ```{r tt-wheat-sessioninfo}
 sessionInfo()

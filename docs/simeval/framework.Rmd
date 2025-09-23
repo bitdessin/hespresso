@@ -12,7 +12,7 @@ such as precision, recall, F1 score, and area under the ROC curve (AUC).
 For reliable evaluation,
 we recommend simulating a large number of homeologs
 to ensure the dataset contains enough homeologs with significant expression ratio shifts for robust validation.
-To reduce computation time in this example,
+However, to reduce computation time in this example,
 we simulate data for only 1,000 homeologs.
 
 ```{r sim-fw-dataset, results="hide", message=FALSE, warning=FALSE}
@@ -21,7 +21,7 @@ x_output <- hobit(x)
 ```
 
 Next, predicted homeologs with significant expression ratio shifts are identified
-using an FDR threshold of 0.05.
+using an false discovery rate (FDR) threshold of 0.05.
 Performance metrics are then calculated by comparing the predicted shifts
 against the ground-truth shifts,
 which are defined using the `def_sigShift()` function.
