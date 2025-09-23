@@ -4,7 +4,7 @@
 \name{hespresso-package}
 \alias{hespresso}
 \alias{hespresso-package}
-\title{hespresso: Methods for Detecting Shifts in Homeolog Expression Ratios in Allopolyploids}
+\title{hespresso: LRT for Detecting Shifts in Homeolog Expression Ratios in Allopolyploids}
 \description{
 hespresso blends homeolog expression with espresso, capturing the essence of power, energy, and focus in homeolog expression analysis. It provides statistical tests for detecting shifts in homeolog expression ratios among subgenomes of allopolyploid species across diverse conditions, using RNA-Seq read count data. Take a sip of hespresso, and start your analysis strong!
 }

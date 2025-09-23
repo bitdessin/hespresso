@@ -26,9 +26,9 @@ plot_HER_distr <- function(x, base = 1) {
         hexp_ratios <- .calc_hexp_ratios(x_counts)
         
         if (base > 0) {
-            hexp_ratios <- data.frame(her = hexp_ratios[, base])
+            hexp_ratios <- data.frame(HER = hexp_ratios[, base])
             her_figs[[group_name]] <- ggplot(data = hexp_ratios, 
-                                             aes_string(x = 'her')) +
+                                             aes_string(x = 'HER')) +
                 geom_histogram()
         }
     }

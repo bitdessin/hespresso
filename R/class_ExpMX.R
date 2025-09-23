@@ -53,8 +53,8 @@ setMethod(
     f = "show",
     signature = "ExpMX",
     definition = function(object) {
-        msg <- c('# ', length(object@data), ' subgenomes', ' (', paste(names(object@data), collapse = ', '),')', '\n',
-                 '# ', nrow(object@data[[1]]), ' homeologs', '\n')
+        msg <- c('# ', length(object@data), ' subgenome sets', ' (', paste(names(object@data), collapse = ', '),')', '\n',
+                 '# ', nrow(object@data[[1]]), ' homeolog tuples', '\n')
         cat(paste(msg, collapse = ''))
         cat('---------------------\n')
         cat('Experiment Design:\n')
