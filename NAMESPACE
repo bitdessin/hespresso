@@ -2,7 +2,6 @@
 
 export(combine_hexp)
 export(def_sigShift)
-export(get_sim_params)
 export(hobit)
 export(homeoroq)
 export(newExpMX)
