@@ -56,7 +56,7 @@ A \code{data.frame} with one row per homeolog, containing:
 \itemize{
 \item \code{pvalue}: p-value from the LRT using normalized likelihoods.
 \item \code{qvalue}: Benjamini–Hochberg adjusted \code{pvalue}.
-\item \code{raw_pvalue}: p-value from the LRT using raw likelihoods.
+\item \code{raw_pvalue}: p-value from the LRT using likelihoods.
 \item \code{raw_qvalue}: Benjamini–Hochberg adjusted \code{raw_pvalue}.
 \item \verb{D__$__*}: Difference in expression ratios for subgenome \code{$}
 between the two groups represented by \code{*}.
@@ -75,7 +75,10 @@ where \code{$} denotes the subgenome name and \code{*} denotes the group name.
 \item \code{logLik_H1}: Log-likelihood of the full model.
 }
 All statistics are derived from MCMC samples
-and may differ from those calculated directly from the RNA-Seq read counts.
+and may differ from those calculated directly from RNA-Seq read counts.
+Additionally, \code{NA} in the output indicates
+that the homeolog is expressed in only one condition,
+making ratio comparisons infeasible.
 }
 \description{
 A statistical framework for identifying changes in homeolog expression ratios

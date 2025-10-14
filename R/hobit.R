@@ -10,7 +10,7 @@
 # Simulation evaluations indicate that using the `sum` method produces stable
 # and accurate results.
 #' @importFrom stats median
-.hb.init_params <- function(x, eps, prior_func = 'sum') {
+.hb.init_params <- function(x, prior_func = 'sum') {
     # gene expression
     gene_exp_mu <- rep(0, length = x$N_CONDITIONS)
     replicate_id <- 1
@@ -21,8 +21,7 @@
             replicate_id <- replicate_id + 1
         }
     }
-    gene_exp_mu[gene_exp_mu == 0] <- eps
-    
+
     # homeolog expression ratios
     hexp_ratios <- .hb.init_params.hexp_ratios(x)
     alpha1 <- switch(prior_func,
@@ -146,7 +145,7 @@
    
     for (i in seq_along(x_list)) {
         idx <- 1
-        hexp <- matrix(NA, nrow = sum(n_replicates), ncol = length(x@data))
+        hexp <- matrix(NA_real_, nrow = sum(n_replicates), ncol = length(x@data))
         for (g in seq_along(group_names)) {
             for (j in seq_along(x@data)) {
                 hexp[seq(idx, (idx - 1) + n_replicates[g]), j] <-
@@ -176,7 +175,7 @@
             .META = list(condition_names = group_names,
                          subgenome_names = names(x@data),
                          init_params = NULL))
-        x_fmt$.META$init_params <- .hb.init_params(x_fmt, eps)
+        x_fmt$.META$init_params <- .hb.init_params(x_fmt)
         x_fmt$PRIOR_ALPHA0 <- x_fmt$.META$init_params$alpha0
         x_fmt$PRIOR_ALPHA1 <- x_fmt$.META$init_params$alpha1
         x_fmt$GENE_EXP_MU <- x_fmt$.META$init_params$gene_exp_mu
@@ -260,14 +259,9 @@
     v <- c(v,
            .hb.calc_shifts(theta),
            raw_pvalue = .hb.calc_p(log_lik, inputs, FALSE),
-           raw_qvalue = NA,
+           raw_qvalue = NA_real_,
            pvalue = .hb.calc_p(log_lik, inputs, TRUE),
-           qvalue = NA)
-    
-    
-    #v_mat <- matrix(v, nrow = 1)
-    #colnames(v_mat) <- names(v)
-    #v_mat
+           qvalue = NA_real_)
     v
 }
 
@@ -337,7 +331,7 @@
 #'      \itemize{
 #'          \item `pvalue`: p-value from the LRT using normalized likelihoods.
 #'          \item `qvalue`: Benjamini–Hochberg adjusted `pvalue`.
-#'          \item `raw_pvalue`: p-value from the LRT using raw likelihoods.
+#'          \item `raw_pvalue`: p-value from the LRT using likelihoods.
 #'          \item `raw_qvalue`: Benjamini–Hochberg adjusted `raw_pvalue`.
 #'          \item `D__$__*`: Difference in expression ratios for subgenome `$`
 #'                between the two groups represented by `*`.
@@ -356,7 +350,10 @@
 #'          \item `logLik_H1`: Log-likelihood of the full model.
 #'      }
 #'      All statistics are derived from MCMC samples
-#'      and may differ from those calculated directly from the RNA-Seq read counts.
+#'      and may differ from those calculated directly from RNA-Seq read counts.
+#'      Additionally, `NA` in the output indicates
+#'      that the homeolog is expressed in only one condition,
+#'      making ratio comparisons infeasible.
 #'
 #' @references Sun J, Sese J, and Shimizu KK.
 #'      A moderated statistical test for detecting shifts in homeolog expression
@@ -422,6 +419,7 @@ hobit <- function(x,
     .outputs_fmt <- .hb.format_draws(data[[1]],
                         .outputs$draws(inc_warmup = FALSE, format = 'matrix'))
     n_stats <- length(.outputs_fmt)
+    stats_names <- names(.outputs_fmt)
     
     # HOBIT
     plan(multisession, workers = n_threads)
@@ -430,11 +428,15 @@ hobit <- function(x,
     with_progress({
         pb <- progressor(length(data))
         stats <- future_vapply(seq_along(data), function(i) {
-            input_params$data <- data[[i]]
-            input_params$data$.META <- NULL
-            outputs <- do.call(m$sample, input_params)
-            outputs_fmt <- .hb.format_draws(data[[i]],
+            if (any(data[[i]]$GENE_EXP_MU == 0)) {
+                outputs_fmt <- rep(NA_real_, n_stats)
+            } else {
+                input_params$data <- data[[i]]
+                input_params$data$.META <- NULL
+                outputs <- do.call(m$sample, input_params)
+                outputs_fmt <- .hb.format_draws(data[[i]],
                                     outputs$draws(inc_warmup = FALSE, format = 'matrix'))
+            }
             pb()
             outputs_fmt
         },
@@ -444,7 +446,6 @@ hobit <- function(x,
     })
     plan(sequential)
 
-    stats_names <- rownames(stats)
     rownames(stats) <- gsub("__\\.\\.__", "__", stats_names)
     stats <- data.frame(t(stats), check.names = FALSE)
     stats$qvalue <- p.adjust(stats$pvalue, method = 'BH')

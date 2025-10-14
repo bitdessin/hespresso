@@ -159,7 +159,7 @@
 .hq.rnorm <- function(n, m, s, cutoff, meta_is_valid) {
     if (length(cutoff) == 1)
         cutoff <- rep(cutoff, n)
-    y <- rep(NA, n)
+    y <- rep(NA_real_, n)
     invalid_idx <- rep(TRUE, n)
     n_tries <- 0
     while(sum(invalid_idx) > 0) {
@@ -184,7 +184,7 @@
 
 
 # Repeat Sampling to Compute P-values
-.hq.sigChangeMH <- function(d, dOR, dOC, dOD, fv, iter_sampling, proc_bar) {
+.hq.sigChangeMH <- function(d, dOR, dOC, dOD, fv, iter_sampling) {
     n_genes <- seq_len(nrow(d$DATA))
     
     is_valid <- is.finite(dOC$r) & is.finite(dOC$rv) & is.finite(dOC$logmean) & is.finite(dOD$r)
@@ -225,12 +225,9 @@
                                    overallRatio, overallRatioSD, ctrlExpMean, objExpMean, 
                                    ctrlSD, objSD)
         sig_counts <- sig_counts + ifelse(est_probs <= obs_prob, 1, 0)
-        if (!is.null(proc_bar))
-            proc_bar()
-        
     }
     
-    pvalues <- rep(1.0, length(n_genes))
+    pvalues <- rep(NA_real_, length(n_genes))
     pvalues[is_valid] <- sig_counts / iter_sampling
     pvalues
 }
@@ -238,7 +235,7 @@
 
 # A Single Run of HomeoRoq test
 #' @importFrom locfit locfit lp
-.hq.homeoroq <- function(x, iter_sampling, proc_bar) {
+.hq.homeoroq <- function(x, iter_sampling) {
     d <- .hq.data.format(x)
     
     # calculating parameters from observed rations
@@ -253,7 +250,7 @@
                  family = 'gaussian', maxk = 1000)
     
     # run sampling-resampling to calculate p-values
-    .hq.sigChangeMH(d, dOR, dOC, dOD, fv, iter_sampling, proc_bar)
+    .hq.sigChangeMH(d, dOR, dOC, dOD, fv, iter_sampling)
 }
 
 
@@ -294,12 +291,16 @@
 #' @return A data.frame with one row per homeolog,
 #'      containing the following columns:
 #'      \itemize{
-#'          \item `pvalue`: Raw p-value from the statistical test.
+#'          \item `pvalue`: p-value from the statistical test.
 #'          \item `qvalue`: Adjusted p-value using the Benjamini-Hochberg method.
 #'          \item `sumexp__*__$`: Total read counts for subgenome `$` under condition `*`.
 #'          \item `ratio__*__$`: Homeolog expression ratio for subgenome `$` under condition `*`.
 #'          \item `ratio_sd`: Standard deviation of homeolog expression ratios calculated from observed counts.
 #'      }
+#'      All statistics are computed directly from the observed read counts.
+#'      Additionally, `NA` in the output indicates
+#'      that the homeolog is expressed in only one condition,
+#'      making ratio comparisons infeasible.
 #'
 #' @references Akama S, Shimizu-Inatsugi R, Shimizu KK, Sese J.
 #'      Genome-wide quantification of homeolog expression ratio revealed
@@ -333,7 +334,7 @@ homeoroq <- function(x,
     with_progress({
         pb <- progressor(chains)
         pvalues <- future_vapply(seq_len(chains), function(i) {
-                outputs <- .hq.homeoroq(x, iter_sampling, NULL)
+                outputs <- .hq.homeoroq(x, iter_sampling)
                 pb()
                 outputs
             },

@@ -31,12 +31,16 @@ which can be set at the beginning of an R session as
 A data.frame with one row per homeolog,
 containing the following columns:
 \itemize{
-\item \code{pvalue}: Raw p-value from the statistical test.
+\item \code{pvalue}: p-value from the statistical test.
 \item \code{qvalue}: Adjusted p-value using the Benjamini-Hochberg method.
 \item \verb{sumexp__*__$}: Total read counts for subgenome \code{$} under condition \code{*}.
 \item \verb{ratio__*__$}: Homeolog expression ratio for subgenome \code{$} under condition \code{*}.
 \item \code{ratio_sd}: Standard deviation of homeolog expression ratios calculated from observed counts.
 }
+All statistics are computed directly from the observed read counts.
+Additionally, \code{NA} in the output indicates
+that the homeolog is expressed in only one condition,
+making ratio comparisons infeasible.
 }
 \description{
 A statistical method for detecting shifts in homeolog expression ratios
