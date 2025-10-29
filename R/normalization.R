@@ -1,6 +1,6 @@
-#' Normalize RNA-Seq Read Count Data
+#' Normalize RNA-seq Read Count Data
 #'
-#' Normalizes RNA-Seq read count data.
+#' Normalizes RNA-seq read count data.
 #'
 #' This function first calculates gene expression by summing homeolog expression
 #' across all subgenomes. Then, it normalizes the gene expression values using

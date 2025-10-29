@@ -260,7 +260,7 @@
 #' among two subgenomes in allopolyploids across two groups.
 #' 
 #' HomeoRoq estimates the probability that homeolog expression ratios
-#' remain constant between two groups using RNA-Seq read count data for
+#' remain constant between two groups using RNA-seq read count data for
 #' each homeolog. Since this probability cannot be calculated analytically,
 #' HomeoRoq uses a Bayesian framework and performs Markov chain Monte Carlo (MCMC)
 #' sampling to estimate the distribution of homeolog expression ratios
@@ -277,7 +277,7 @@
 #' (Akama et al., NAR, 2014), set `chains = 10` and `iter_sampling = 1e4`.
 #'
 #' @param x An \linkS4class{ExpMX} class object containing normalized homeolog
-#'      expression data (i.e., RNA-Seq read counts).
+#'      expression data (i.e., RNA-seq read counts).
 #' @param chains Integer. Specifies the number of independent sampling
 #'      iterations used in the statistical test.
 #' @param iter_sampling Integer. Specifies the number of samples to draw per
@@ -305,7 +305,7 @@
 #' @references Akama S, Shimizu-Inatsugi R, Shimizu KK, Sese J.
 #'      Genome-wide quantification of homeolog expression ratio revealed
 #'      nonstochastic gene regulation in synthetic allopolyploid Arabidopsis.
-#'      Nucleic Acids Res. 2014;42(6):e46. \doi{10.1093/nar/gkt1376}
+#'      Nucleic Acids Res. 42(6):e46, 2014. \doi{10.1093/nar/gkt1376}
 #'
 #' @examples
 #' x <- sim_homeolog_counts(100)

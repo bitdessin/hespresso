@@ -2,7 +2,7 @@
 % Please edit documentation in R/normalization.R
 \name{norm_counts}
 \alias{norm_counts}
-\title{Normalize RNA-Seq Read Count Data}
+\title{Normalize RNA-seq Read Count Data}
 \usage{
 norm_counts(x, method = c("tmm", "med", "cpm"), round = FALSE)
 }
@@ -24,7 +24,7 @@ to integers using the \code{round()} function.}
 An \linkS4class{ExpMX} object with normalized read counts.
 }
 \description{
-Normalizes RNA-Seq read count data.
+Normalizes RNA-seq read count data.
 }
 \details{
 This function first calculates gene expression by summing homeolog expression

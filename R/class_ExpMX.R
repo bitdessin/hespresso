@@ -3,9 +3,9 @@ setClassUnion("NumericOrNULL", c("numeric", "NULL"))
 setClassUnion("ListOrMatrix", c("list", "matrix"))
 
 
-#' Class to Store RNA-Seq Read Count Data
+#' Class to Store RNA-seq Read Count Data
 #'
-#' An S4 class for storing RNA-Seq read count data, including gene or homeolog
+#' An S4 class for storing RNA-seq read count data, including gene or homeolog
 #' expression, experimental design, and associated metadata.
 #'
 #' @slot data A list of read count matrices, with one matrix per subgenome.

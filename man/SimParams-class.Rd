@@ -9,7 +9,7 @@ An object of class \code{SimParams}.
 }
 \description{
 An S4 class for storing simulation parameters
-used to generate synthetic RNA-Seq count data.
+used to generate synthetic RNA-seq count data.
 }
 \section{Slots}{
 

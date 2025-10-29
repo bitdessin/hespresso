@@ -14,7 +14,7 @@ csl: "springer-basic-author-date.csl"
 capturing the essence of power, energy, and focus in homeolog expression analysis.
 It provides statistical tests for detecting shifts in homeolog expression ratios
 among subgenomes of allopolyploid species
-across diverse conditions, using RNA-Seq read count data.
+across diverse conditions, using RNA-seq read count data.
 Take a sip of `r pkg('hespresso')` &#9749;, and start your analysis strong!
 
 <div style="margin:3em 0;">
@@ -53,10 +53,10 @@ the regulatory mechanisms underlying allopolyploid evolution and adaptation.
 
 The `r pkg("hespresso")` package provides statistical tools
 to detect homeologs with shifted expression ratios
-across diverse experimental conditions using RNA-Seq data from allopolyploid species.
+across diverse experimental conditions using RNA-seq data from allopolyploid species.
 It implements two methods: HOBIT [@ref_hobit] and HomeoRoq [@ref_homeoroq].
 HOBIT offers broad applicability, accommodating polyploid systems
-with uneven or complex subgenome compositions,
+with uneven (e.g., allotriploids) or complex subgenome compositions (e.g., allohexaploids like wheat),
 and supports hypothesis testing across multiple conditions.
 In contrast, HomeoRoq is tailored for detecting ratio shifts between two conditions in allotetraploids.
 Benchmarking with simulated data indicates that

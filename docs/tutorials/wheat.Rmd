@@ -14,9 +14,9 @@ It originated through hybridization among three diploid progenitor species,
 an unknown species related to  *Aegilops speltoides* (2n = 2x = 14; SS,
 which is thought to be the progenitor of BB),
 and *Aegilops tauschii* (2n = 2x = 14, DD),
-and contains three distinct subgenomes [@ref_wheat_origin_1; @ref_wheat_origin_2; @ref_wheatgenome].
+containing three distinct subgenomes [@ref_wheat_origin_1; @ref_wheat_origin_2; @ref_wheatgenome].
 To demonstrate the applicability of HOBIT to allohexaploid species,
-we present a case study using wheat RNA-Seq data
+we present a case study using wheat RNA-seq data
 to detect homeologs with shifts in expression ratios between two tissues,
 shoot apex and leaf [@ref_wheatseedmatrix].
 
@@ -77,14 +77,12 @@ names(distr_plots_A)
 
 library(ggplot2)
 library(gridExtra)
-grid.arrange(distr_plots_A[["apex"]] + ggtitle("apex on A subgenome"),
-             distr_plots_A[["leaf"]] + ggtitle("leaf on A subgenome"),
+grid.arrange(distr_plots_A[["apex"]] + ggtitle("A-ratio in apex sample"),
+             distr_plots_A[["leaf"]] + ggtitle("A-ratio in leaf sample"),
              ncol = 2)
 ```
 
-To calculate expression ratios from the second or third subgenome,
-set the `base` option accordingly.
-For example, to calculate the ratios for the second and third subgenomes
+To calculate the ratios for the second and third subgenomes
 (i.e., B-subgenome and D-subgenome), set `base = 2` and `base = 3`, respectively.
 
 
@@ -92,12 +90,12 @@ For example, to calculate the ratios for the second and third subgenomes
 distr_plots_B <- plot_HER_distr(x, base = 2)
 distr_plots_D <- plot_HER_distr(x, base = 3)
 
-grid.arrange(distr_plots_A[["apex"]] + ggtitle("apex on A"),
-             distr_plots_A[["leaf"]] + ggtitle("leaf on A"),
-             distr_plots_B[["apex"]] + ggtitle("apex on B"),
-             distr_plots_B[["leaf"]] + ggtitle("leaf on B"),
-             distr_plots_D[["apex"]] + ggtitle("apex on D"),
-             distr_plots_D[["leaf"]] + ggtitle("leaf on D"),
+grid.arrange(distr_plots_A[["apex"]] + ggtitle("A-ratio in apex sample"),
+             distr_plots_A[["leaf"]] + ggtitle("A-ratio in leaf sample"),
+             distr_plots_B[["apex"]] + ggtitle("B-ratio in apex sample"),
+             distr_plots_B[["leaf"]] + ggtitle("B-ratio in leaf sample"),
+             distr_plots_D[["apex"]] + ggtitle("D-ratio in apex sample"),
+             distr_plots_D[["leaf"]] + ggtitle("D-ratio in leaf sample"),
              ncol = 2)
 ```
 
@@ -117,6 +115,19 @@ x_output <- hobit(x)
 
 ```{r tt-wheat-hobit-output}
 head(x_output)
+```
+
+Note that the `pvalue` and `qvalue` columns in `x_output` may contain `NA` values.
+This happens when at least one gene in a homeolog triad is not expressed in one or more conditions,
+making it impossible to calculate expression ratios.
+As a result, the statistical test cannot be performed for those triads.
+These `NA` values may affect sorting or counting the number of significant homeolog triads.
+Therefore, we recommend replacing `NA` with `1` (i.e., non-significant)
+before performing downstream analyses.
+
+```{r tt-wheat-hobit-replace-na}
+x_output$pvalue[is.na(x_output$pvalue)] <- 1
+x_output$qvalue[is.na(x_output$qvalue)] <- 1
 ```
 
 The output can be sorted in ascending order of *p*-values using the following code.
@@ -142,18 +153,19 @@ plot_HER(x, base = 2, label = is_sig)
 ```
 
 
-Note that expression ratios are calculated for the selected subgenome,
+Note that expression ratios in the plots are calculated for the selected subgenome,
 while highlighted homeologs are those that meet the significance threshold in any subgenome.
-As a result, some homeologs may appear highlighted even if they show only minor changes in the plot,
+As a result, some homeologs may appear highlighted even if they show only minor changes in the plots,
 because they may have significantly altered expression ratios in another subgenome.
 
 ### Combining Subgenomes
 
-Additionally, users who want to test expression ratios
+Users who want to test expression ratios
 between the combined A- and B-subgenomes versus the D-subgenome
-can first merge the expression values of the A and B homeologs
+can first merge the expression of the A and B homeologs
 using the `combine_hexp()` function.
-After combining, the statistical test can be performed on the merged dataset.
+After the merging step, statistical tests can be performed on the resulting dataset.
+
 Assuming the A- and B-subgenomes are stored as the first and second subgenomes
 in the `x` object (as defined in the `mapping_table`),
 set `subgenomes = c(1, 2)` to combine them.
@@ -164,15 +176,46 @@ x_ABvsD <- combine_hexp(x, subgenomes = c(1, 2))
 x_ABvsD
 ```
 
+In this case, the combined A- and B-subgenomes are appended as the last subgenome,
+so the subgenome order in `x_ABvsD` becomes D and A+B.
+The distribution of homeolog expression ratios can
+then be visualized using the `plot_HER_distr()` function.
+By default, the ratios are calculated for the D-subgenome,
+as D-subgenome is now the first subgenome in `x_ABvsD`.
+
+
+```{r tt-wheat-viz-distr-combined, fig.cap="Distribution of homeolog expression ratios of D-subgenome between shoot apex and leaf in wheat."}
+distr_plots_AB <- plot_HER_distr(x_ABvsD)
+grid.arrange(distr_plots_AB[["apex"]] + ggtitle("AB-ratio in apex sample"),
+             distr_plots_AB[["leaf"]] + ggtitle("AB-ratio in leaf sample"),
+             ncol = 2)
+```
+
+
+The resulting distributions show a peak around one-thirds,
+indicating that most homeologs are expressed equally between the D-subgenome
+and the combined A- and B-subgenomes.
+
 HOBIT can then be applied to the combined dataset as below.
 
 ```{r tt-wheat-combine-subgenomes-hobit, results="hide", message=FALSE, warning=FALSE}
 x_ABvsD_output <- hobit(x_ABvsD)
+x_ABvsD_output$pvalue[is.na(x_ABvsD_output$pvalue)] <- 1
+x_ABvsD_output$qvalue[is.na(x_ABvsD_output$qvalue)] <- 1
 ```
 
 ```{r tt-wheat-combine-subgenomes-hobit-output}
 head(x_ABvsD_output[order(x_ABvsD_output$pvalue), ])
 ```
+
+The detection results can be visualized as follows.
+
+
+```{r tt-wheat-viz-HER-changes-combined, fig.cap="Changes in homeolog expression ratios of the D-subgenome versus the combined A- and B-subgenomes between shoot apex and leaf tissues. Each point represents the ratio in shoot apex (x-axis) and leaf (y-axis). Orange points indicate homeologs with significant changes, gray points indicate homeologs without significant changes."}
+is_sig <- ifelse(x_ABvsD_output$qvalue < 0.01, "q<0.01", "q>=0.01")
+plot_HER(x_ABvsD, label = is_sig)
+```
+
 
 
 ### Analysis Environment

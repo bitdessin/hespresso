@@ -17,7 +17,7 @@ hobit(
 }
 \arguments{
 \item{x}{An \linkS4class{ExpMX} object containing normalized homeolog
-expression data (RNA-Seq read counts).}
+expression data (RNA-seq read counts).}
 
 \item{use_Dirichlet}{Logical. Whether to apply a Dirichlet prior distribution
 when sampling expression ratios.}
@@ -75,7 +75,7 @@ where \code{$} denotes the subgenome name and \code{*} denotes the group name.
 \item \code{logLik_H1}: Log-likelihood of the full model.
 }
 All statistics are derived from MCMC samples
-and may differ from those calculated directly from RNA-Seq read counts.
+and may differ from those calculated directly from RNA-seq read counts.
 Additionally, \code{NA} in the output indicates
 that the homeolog is expressed in only one condition,
 making ratio comparisons infeasible.
@@ -87,7 +87,7 @@ across experimental conditions in allopolyploid species.
 \details{
 HOBIT is a statistical test for detecting homeologs with differential
 homeolog expression ratios across multiple experimental conditions
-in allopolyploid species, using RNA-Seq read count data.
+in allopolyploid species, using RNA-seq read count data.
 It employs a likelihood ratio test (LRT) to compare two hierarchical models:
 a full model that allows HERs to vary among conditions,
 and a reduced model that assumes constant ratios across all conditions.
@@ -126,8 +126,8 @@ x_output <- hobit(x, n_threads = 8, parallel_chains = 1, iter_warmup = 100, iter
 
 }
 \references{
-Sun J, Sese J, and Shimizu KK.
-A moderated statistical test for detecting shifts in homeolog expression
-ratios in allopolyploids.
-bioRxiv 2025;2025.07.01.660977. \doi{10.1101/2025.07.01.660977}
+Sun J, Sese J, Shimizu KK.
+A likelihood ratio test for detecting shifts in homeolog expression ratios in allopolyploids.
+New Phytol., 2025.
+\doi{10.1111/nph.70648}
 }

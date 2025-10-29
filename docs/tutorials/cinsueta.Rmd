@@ -11,7 +11,7 @@ Two of its subgenomes are derived from *Cardamine rivularis* (2n = 2x = 16, RR),
 a species inhabiting grassy areas away from riversides,
 while the third subgenome comes from *Cardamine amara* (2n = 2x = 16, AA),
 a species typically found on riversides or in streams [@ref_cins_origin_1; @ref_cins_origin_2].
-RNA-Seq studies on *C. insueta* leaflets floating on water suggested that
+RNA-seq studies on *C. insueta* leaflets floating on water suggested that
 *C. insueta* shifts homeolog expression ratios over time following submergence [@ref_cins_submergestress].
 
 ### Data Preparation
@@ -99,6 +99,27 @@ using eight threads and may vary depending on hardware performance.
 ```{r tt-cins-hobit-output}
 head(x_output)
 ```
+
+Note that the `pvalue` and `qvalue` columns in `x_output` may contain `NA` values.
+This happens when at least one gene in a homeolog pair is not expressed in one or more conditions,
+making it impossible to calculate expression ratios.
+As a result, the statistical test cannot be performed for those pairs.
+These `NA` values may affect sorting or counting the number of significant homeolog pairs.
+Therefore, we recommend replacing `NA` with `1` (i.e., non-significant)
+before performing downstream analyses.
+For example:
+
+
+```{r tt-cins-hobit-replace-na}
+x_output$pvalue[is.na(x_output$pvalue)] <- 1
+x_output$qvalue[is.na(x_output$qvalue)] <- 1
+```
+
+```{r tt-cins-hobit-replace-qcutoff}
+x_output[x_output$qvalue < 0.05,]
+```
+
+
 
 
 ### Analysis Environment

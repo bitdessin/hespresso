@@ -1,7 +1,7 @@
 #' Class to Store Simulation Parameters
 #'
 #' An S4 class for storing simulation parameters  
-#' used to generate synthetic RNA-Seq count data.
+#' used to generate synthetic RNA-seq count data.
 #'
 #' @slot n_subgenomes An integer representing the number of subgenomes.
 #' @slot n_genes An integer representing the number of genes or homeologs.

@@ -3,12 +3,12 @@
 \docType{class}
 \name{ExpMX-class}
 \alias{ExpMX-class}
-\title{Class to Store RNA-Seq Read Count Data}
+\title{Class to Store RNA-seq Read Count Data}
 \value{
 An object of class \linkS4class{ExpMX}.
 }
 \description{
-An S4 class for storing RNA-Seq read count data, including gene or homeolog
+An S4 class for storing RNA-seq read count data, including gene or homeolog
 expression, experimental design, and associated metadata.
 }
 \section{Slots}{

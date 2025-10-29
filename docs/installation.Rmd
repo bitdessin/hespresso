@@ -1,17 +1,17 @@
 # Installation
 
 To install the `r pkg("hespresso")` package,
-start R (version 4.5 or later) and run the following commands:
+start R and run the following commands:
 
 
 ```{r installation-package, eval=FALSE}
 # CRAN Packages
 install.packages(c("remotes", "BiocManager"))
 
-# Bioconductor Packages
+# edgeR for dispersion estimation
 BiocManager::install("edgeR")
 
-# cmdstanr
+# cmdstanr for MCMC sampling
 install.packages("cmdstanr", repos = c("https://stan-dev.r-universe.dev", getOption("repos")))
 cmdstanr::install_cmdstan()
 

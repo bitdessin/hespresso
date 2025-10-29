@@ -2,7 +2,7 @@
 % Please edit documentation in R/sim.R
 \name{sim_homeolog_counts}
 \alias{sim_homeolog_counts}
-\title{Generate Artificial RNA-Seq Read Counts Simulating Homeolog Expression}
+\title{Generate Artificial RNA-seq Read Counts Simulating Homeolog Expression}
 \usage{
 sim_homeolog_counts(
   n_genes = 10000,
@@ -32,7 +32,7 @@ An object of class \linkS4class{ExpMX},
 containing simulated expression data.
 }
 \description{
-Simulates artificial RNA-Seq read counts for allopolyploids based on a
+Simulates artificial RNA-seq read counts for allopolyploids based on a
 negative binomial distribution, mimicking homeolog expression patterns
 across subgenomes.
 }
@@ -45,7 +45,7 @@ This function performs the following steps to generate synthetic read counts:
 (5) samples counts from a negative binomial distribution using the calculated
 means and dispersions.
 
-By default, the function uses real RNA-Seq datasets from \emph{Cardamine flexuosa}
+By default, the function uses real RNA-seq datasets from \emph{Cardamine flexuosa}
 and wheat to define the sampling population for allopolyploids consiting of
 two or three subgenomes, respectively, in step (1). Alternatively, users can
 provide their own normalized expression matrix via the \code{seed_expmx} argument.

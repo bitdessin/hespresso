@@ -1,12 +1,10 @@
 # Tutorials
 
 This chapter provides step-by-step tutorials demonstrating
-the use of `r pkg("hespresso")` with real RNA-Seq datasets from diverse allopolyploids,
-including allotetraploid, allohexaploid, and allotriploid.
+the use of `r pkg("hespresso")` with real RNA-seq datasets.
 Workflows cover data preparation, normalization, and statistical testing
-with HOBIT or HomeoRoq, illustrating practical strategies
-to detect shifts in homeolog expression ratios across developmental stages,
-stress treatments, and ecological habitats.
+with HOBIT and HomeoRoq, illustrating practical strategies
+to detect shifts in homeolog expression ratios across difference conditions.
 
 
 ```{r tt-sec-cflex, child='tutorials/cflexuosa.Rmd'}

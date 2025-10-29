@@ -28,14 +28,3 @@ test_that('Test function to define DEGs and RCHs.', {
     
     is_sig_1a <- def_sigShift(x, operator = 'AND')
 })
-
-
-test_that('Test function to obtain ground truth parameters.', {
-    x <- sim_homeolog_counts()
-    
-    get_sim_params(x, 'mean')
-    
-    get_sim_params(x, 'disp')
-    
-    get_sim_params(x, 'her')
-})

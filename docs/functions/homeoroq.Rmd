@@ -6,7 +6,7 @@ source("../_config.R")
 
 HomeoRoq [@ref_homeoroq] estimates the probability that
 homeolog expression ratios remain constant
-between two experimental groups using RNA-Seq read count data for each homeolog.
+between two experimental groups using RNA-seq read count data for each homeolog.
 Since this probability cannot be derived analytically,
 HomeoRoq adopts a Bayesian framework
 to approximate the posterior distribution of homeolog expression ratios
@@ -60,7 +60,7 @@ head(x_output)
 ```
 
 - `gene`: Homeolog ID. The gene names defined in the first column of the mapping table.
-- `pvalue`: *p*-value from the likelihood ratio test.
+- `pvalue`: *p*-value calculated from sampling.
 - `qvalue`: Adjusted *p*-value using the Benjamini-Hochberg method.
 - `sumexp__*__$`: Total read counts for subgenome `$` under condition `*`.
 - `ratio__*__$`: Homeolog expression ratios for subgenome `$` under condition `*`.
@@ -70,6 +70,22 @@ The total read counts (`sumexp__*__$`) and homeolog expression ratios (`ratio__*
 are computed directly from the observed read counts.
 Note that this differs from the `hobit()` function,
 which calculates its statistics from MCMC samples.
+
+Furthermore, the `pvalue` and `qvalue` columns in `x_output` may contain `NA` values.
+This happens when at least one gene in a homeolog tuple is not expressed in one or more conditions,
+making it impossible to calculate expression ratios.
+As a result, the statistical test cannot be performed for those tuples.
+These `NA` values may affect sorting or counting the number of significant homeolog tuples.
+Therefore, we recommend replacing `NA` with `1` (i.e., non-significant)
+before performing downstream analyses.
+For example:
+
+
+```{r fc-hq-output-print-na}
+x_output$pvalue[is.na(x_output$pvalue)] <- 1
+x_output$qvalue[is.na(x_output$qvalue)] <- 1
+```
+
 
 
 ### Options

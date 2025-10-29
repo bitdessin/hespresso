@@ -273,7 +273,7 @@
 #' 
 #' HOBIT is a statistical test for detecting homeologs with differential
 #' homeolog expression ratios across multiple experimental conditions
-#' in allopolyploid species, using RNA-Seq read count data.
+#' in allopolyploid species, using RNA-seq read count data.
 #' It employs a likelihood ratio test (LRT) to compare two hierarchical models:
 #' a full model that allows HERs to vary among conditions,
 #' and a reduced model that assumes constant ratios across all conditions.
@@ -300,7 +300,7 @@
 #' likelihood computation, and hypothesis testing.
 #'
 #' @param x An \linkS4class{ExpMX} object containing normalized homeolog
-#'      expression data (RNA-Seq read counts).
+#'      expression data (RNA-seq read counts).
 #' @param use_Dirichlet Logical. Whether to apply a Dirichlet prior distribution
 #'      when sampling expression ratios.
 #' @param no_replicate Logical. If `TRUE`, all replicates are treated as a
@@ -350,15 +350,15 @@
 #'          \item `logLik_H1`: Log-likelihood of the full model.
 #'      }
 #'      All statistics are derived from MCMC samples
-#'      and may differ from those calculated directly from RNA-Seq read counts.
+#'      and may differ from those calculated directly from RNA-seq read counts.
 #'      Additionally, `NA` in the output indicates
 #'      that the homeolog is expressed in only one condition,
 #'      making ratio comparisons infeasible.
 #'
-#' @references Sun J, Sese J, and Shimizu KK.
-#'      A moderated statistical test for detecting shifts in homeolog expression
-#'      ratios in allopolyploids.
-#'      bioRxiv 2025;2025.07.01.660977. \doi{10.1101/2025.07.01.660977}
+#' @references Sun J, Sese J, Shimizu KK.
+#'      A likelihood ratio test for detecting shifts in homeolog expression ratios in allopolyploids.
+#'      New Phytol., 2025.
+#'      \doi{10.1111/nph.70648}
 #'      
 #' @examples
 #' x <- sim_homeolog_counts(10)
@@ -411,10 +411,12 @@ hobit <- function(x,
     m <- cmdstan_model(stan_file = stan_code_fpath,
                        dir = tempdir(), quiet = TRUE, compile = TRUE)
     
-    # calculate n of outputs
+    # calculate n. of outputs
     .input_params <- input_params
     .input_params$data <- data[[1]]
     .input_params$data$.META <- NULL
+    .input_params$refresh <- 0
+    .input_params$show_messages <- FALSE
     .outputs <- do.call(m$sample, .input_params)
     .outputs_fmt <- .hb.format_draws(data[[1]],
                         .outputs$draws(inc_warmup = FALSE, format = 'matrix'))
@@ -424,7 +426,6 @@ hobit <- function(x,
     # HOBIT
     plan(multisession, workers = n_threads)
     handlers("progress")
-    if (FALSE) progress_bar
     with_progress({
         pb <- progressor(length(data))
         stats <- future_vapply(seq_along(data), function(i) {

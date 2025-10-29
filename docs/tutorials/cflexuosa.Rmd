@@ -13,7 +13,7 @@ While *C. hirsuta* is typically adapted to dry habitats such as roadsides,
 *C. amara* inhabits wet environments such as riversides or running streams.
 The allopolyploid *C. flexuosa* thrives across a wide range of ecological habitats.
 
-Akiyama et al. conducted an RNA-Seq experiment using leaf samples of *C. flexuosa*
+Akiyama et al. conducted an RNA-seq experiment using leaf samples of *C. flexuosa*
 collected from wet and dry habitats across three different days [@ref_cflex_ecohabitats].
 Each habitat–date combination included two or three biological replicates.
 In the original study,
@@ -25,11 +25,12 @@ in expression depending on environmental differences, wet and dry.
 
 ### Data Preparation
 
-In this example, we demonstrate how to use HOBIT and HomeoRoq to analyze the *C. flexuosa* dataset.
+In this example, we demonstrate how to use HOBIT and HomeoRoq
+to analyze this *C. flexuosa* dataset.
 To reduce computation time, we focus on samples collected on May 16, 2013,
 and randomly select 500 homeolog pairs (`c_flexuosa.0516.mini.txt.gz`).
-Users can, however, analyze the full dataset or samples from other dates.
-These datasets are available in the [data](https://github.com/bitdessin/hespresso/tree/main/docs/data) directory,
+Users can, however, analyze the full dataset or samples from other dates,
+which are available in the [data](https://github.com/bitdessin/hespresso/tree/main/docs/data) directory,
 and the same workflow can be applied.
 
 ```{r tt-cflex-load-counts}
@@ -40,7 +41,7 @@ group <- c("wet", "wet", "wet", "dry", "dry", "dry")
 ```
 
 Next, load the homeolog mapping table,
-which links gene expression values to their corresponding homeologs.
+which links gene expression to their corresponding homeologs.
 This table is a tab-separated file in which the first and second columns
 represent gene names from *C. hirsuta* and *C. amara*, respectively.
 
@@ -116,6 +117,19 @@ The order of the test output matches that of the input.
 head(x_output)
 ```
 
+Note that the `pvalue` and `qvalue` columns in `x_output` may contain `NA` values.
+This happens when at least one gene in a homeolog pair is not expressed in one or more conditions,
+making it impossible to calculate expression ratios.
+As a result, the statistical test cannot be performed for those pairs.
+These `NA` values may affect sorting or counting the number of significant homeolog pairs.
+Therefore, we recommend replacing `NA` with `1` (i.e., non-significant)
+before performing downstream analyses.
+
+```{r tt-cflex-hobit-replace-na}
+x_output$pvalue[is.na(x_output$pvalue)] <- 1
+x_output$qvalue[is.na(x_output$qvalue)] <- 1
+```
+
 To rank the output in descending order of *p*-values, use the following code.
 
 ```{r tt-cflex-hobit-sorted-output}
@@ -147,6 +161,8 @@ as shown below.
 
 ```{r tt-cflex-hq-run, results="hide", message=FALSE, warning=FALSE}
 x_homeoroq <- homeoroq(x)
+x_homeoroq$pvalue[is.na(x_homeoroq$pvalue)] <- 1
+x_homeoroq$qvalue[is.na(x_homeoroq$qvalue)] <- 1
 ```
 
 ```{r tt-cflex-hq-output}

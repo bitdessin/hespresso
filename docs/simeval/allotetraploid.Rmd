@@ -10,7 +10,7 @@ By default, the simulation generates read counts
 for an allotetraploid with 10,000 homeologs across two conditions,
 each with three biological replicates.
 The mean and dispersion parameters are estimated
-from real RNA-Seq data from an allotetraploid *Cardamine flexuosa* dataset [@ref_cflex_ecohabitats].
+from real RNA-seq data from an allotetraploid *Cardamine flexuosa* dataset [@ref_cflex_ecohabitats].
 
 To generate a simulated dataset with default options, run as follows.
 
@@ -28,23 +28,45 @@ x <- sim_homeolog_counts(n_gene = 1000, n_replicates = c(5, 5))
 x
 ```
 
-Simulated read counts are generated from a negative binomial (NB) distribution.
-The mean and dispersion values used for each homeolog are stored in the object returned by `sim_homeolog_counts()`.
-The `get_sim_params()` function can be used to retrieve these parameters.
-For example, to get means used for sampling read counts, run as follows.
+Parameters used for simulating read counts are stored in the `x` object
+returned by the `sim_homeolog_counts()` function.
+Users can access these parameters via the `@meta` slot of the `x` object.
+For example, `x@meta` contains the following information:
 
-```{r sim-2x-getsimparams}
-param_mu <- get_sim_params(x, "mu")
-names(param_mu)
-head(param_mu[["group_1"]])
+```{r sim-2x-meta-slotnames}
+slotNames(x@meta)
 ```
 
-The output is a list of data frames, one per condition, with columns representing individual subgenomes.
-These ground-truth mean values can be used to calculate true homeolog expression ratios for each condition.
-Users can then define homeologs that show significant changes in expression ratios between conditions.
+To retrieve the ground-truth means used for the simulation,
+users can access the `mu` slot as follows.
 
-Alternatively, the `def_sigShift()` function can automatically
-define homeologs with significant shifts without manual calculations.
+```{r sim-2x-meta-mu}
+names(x@meta@mu)
+head(x@meta@mu[[1]])
+head(x@meta@mu[[2]])
+```
+
+The dispersion parameters used in the simulation are estimated from
+the relationship between mean and dispersion in a real RNA-seq dataset.
+The fitted model function can be accessed via the `nls` slot.
+
+```{r sim-2x-meta-nls}
+x@meta@nls
+```
+
+Additionally, the ground-truth homeolog expression ratios can be calculated manually
+from the ground-truth means, or they can be retrieved directly from the `her` slot, as follows.
+
+```{r sim-2x-meta-her}
+names(x@meta@her)
+head(x@meta@her[[1]])
+head(x@meta@her[[2]])
+```
+
+Using this information,
+users can define homeologs that show significant changes in expression ratios between conditions.
+Alternatively, the `def_sigShift()` function can automatically identify homeologs
+with significant shifts without the need for manual calculations.
 For example, to identify homeologs with a maximum absolute ratio difference (`Dmax`) greater than 0.2
 or a maximum odds ratio (`ORmax`) exceeding 2.0, use the following code.
 

@@ -5,19 +5,19 @@ source("../_config.R")
 ```
 
 To simulate read counts for an allohexaploid with three subgenomes, set `n_subgenomes = 3`.
-In this case, the mean and dispersion parameters are derived from real RNA-Seq data
+In this case, the mean and dispersion parameters are derived from real RNA-seq data
 of allohexaploid wheat [@ref_wheatseedmatrix].
 
 ```{r sim-3x-default}
 x <- sim_homeolog_counts(n_subgenomes = 3)
 ```
 
-Simulation parameters can be retrieved using the `get_sim_params()` function,
+Simulation parameters can be retrieved from `@meta` slot (i.e., `x@meta`)
 and ground-truth homeologs with significant expression ratio shifts
 can be defined using the `def_sigShift()`, similar to the allotetraploid example.
 
-For exmaple, using the `def_sigShift()` function can define ground-truth RSHs,
-homeologs with large changes satisfied the given thresholds in any subgenome.
+For exmaple, using the `def_sigShift()` function can define homeologs
+with large changes satisfied the given thresholds in any subgenome.
 
 ```{r sim-3x-defsigshift}
 is_sig <- def_sigShift(x, Dmax = 0.2, ORmax = 2, operator = "OR")

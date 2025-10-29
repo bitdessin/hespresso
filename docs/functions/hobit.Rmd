@@ -44,17 +44,17 @@ inheriting its configuration options for flexible and scalable inference.
 ### Inputs
 
 The `hobit()` function requires an input object of class `ExpMX`.
-To create this object from real RNA-Seq data,
+To create this object from real RNA-seq data,
 users need to provide the following three components:
 
 - a gene expression matrix
-- a vector or data.frame of condition labels
+- a vector or data frame of condition labels
 - a mapping table to organize gene expression data into homeolog expression
 
 The following example shows how to load gene expression data,
 define experimental conditions, and load the mapping table from a file.
 
-The gene expression matrix should be a data.frame or matrix,
+The gene expression matrix should be a data frame or matrix,
 with row names corresponding to gene names.
 
 ```{r fc-hobit-input-preparation-gexp}
@@ -63,14 +63,14 @@ gexp <- read.table("../data/c_flexuosa.0516.mini.txt.gz",
 head(gexp)
 ```
 
-The condition labels can be provided as a vector or a data.frame.
+The condition labels can be provided as a vector or a data frame.
 
 ```{r fc-hobit-input-preparation-mappingtable}
 group <- c("wet", "wet", "wet", "dry", "dry", "dry")
 group
 ```
 
-The mapping table (`mapping_table`) is a data.frame
+The mapping table (`mapping_table`) is a data frame
 in which the first and second columns correspond to gene names
 from _C. hirsuta_ and _C. amara_, respectively.
 It is assumed that all gene names in both columns appear
@@ -126,17 +126,16 @@ The result (`x_output`) is a data frame with one row per homeolog.
 The row order matches the input,
 and the columns summarize the results of the statistical test.
 The output includes the following statistics.
-All statistics are derived from MCMC samples and
-may differ from those calculated directly from the observed RNA-Seq read counts.
+
 
 ```{r, fc-hobit-output-print}
 head(x_output)
 ```
 
 - `gene`: Homeolog ID. The gene names defined in the first column of the mapping table.
-- `pvalue`: p-value from the LRT using normalized likelihoods.
+- `pvalue`: *p*-value from the LRT based on normalized likelihoods. `NA` indicates that the homeolog is expressed in only one condition, making ratio comparisons infeasible and consequently preventing the calculation of *p*-value.
 - `qvalue`: Benjamini–Hochberg adjusted `pvalue`.
-- `raw_pvalue`: p-value from the LRT using raw likelihoods.
+- `raw_pvalue`: *p*-value from the LRT using raw likelihoods.
 - `raw_qvalue`: Benjamini–Hochberg adjusted `raw_pvalue`.
 - `D__$__*`: Difference in expression ratios for subgenome `$` between the two groups represented by `*`.
 - `OR__$__*`: Odds ratio of expression ratios for subgenome `$` between the two groups represented by `*`.
@@ -146,6 +145,26 @@ head(x_output)
 - `theta1__$__*`: Posterior expression ratio estimates specific to each condition, where `$` denotes the subgenome name and `*` denotes the group name.
 - `logLik_H0`: Log-likelihood of the reduced model.
 - `logLik_H1`: Log-likelihood of the full model.
+
+
+Note that all statistics are derived from MCMC samples and
+may differ from those calculated directly from the observed RNA-seq read counts.
+
+Furthermore, the `pvalue` and `qvalue` columns in `x_output` may contain `NA` values.
+This happens when at least one gene in a homeolog tuple is not expressed in one or more conditions,
+making it impossible to calculate expression ratios.
+As a result, the statistical test cannot be performed for those tuples.
+These `NA` values may affect sorting or counting the number of significant homeolog tuples.
+Therefore, we recommend replacing `NA` with `1` (i.e., non-significant)
+before performing downstream analyses.
+For example:
+
+
+```{r fc-hobit-output-print-na}
+x_output$pvalue[is.na(x_output$pvalue)] <- 1
+x_output$qvalue[is.na(x_output$qvalue)] <- 1
+```
+
 
 
 
@@ -190,24 +209,24 @@ Hence, if both are specified, users should reserve `n_threads` × `parallel_chai
 
 #### Model Options
 
-By default, HOBIT assumes that homeolog expression follows a NB distribution.
+By default, HOBIT assumes that homeolog expression follows an NB distribution.
 In this model, the mean is sampled from a NIP distribution,
 and the dispersion parameter is estimated using the `estimateDisp()` function
 from the `r pkg("edgeR", "bioc")` package [@ref_edger].
 In addition to these defaults,
 HOBIT provides options for users to customize these assumptions as needed.
 
-To switch from the default NB distribution to a zero-inflated negative binomial
-(ZINB) distribution, user can set `dist = "ZINB"`.
+To model homeolog expression,
+user can set `dist = "ZINB"`
+to switch from the default NB distribution to a zero-inflated negative binomial
+(ZINB) distribution.
 
 ```{r fc-hobit-modelopts-ZINB, eval=FALSE}
 x_output <- hobit(x, dist = "ZINB")
 ```
 
-By default, homeolog expression ratios are sampled from NIP distributions,
-with the constraint that their sum equals 1.
-Beside the defaults, HOBIT also supports using a Dirichlet prior distribution,
-with parameters estimated from the observed homeolog expression values.
+For sampling homeolog expression ratios,
+HOBIT supports using a Dirichlet prior distribution instead of NIP.
 This can be enabled by setting the `use_Dirichlet` option, as shown below.
 
 ```{r fc-hobit-modelopts-useprior, eval=FALSE}
