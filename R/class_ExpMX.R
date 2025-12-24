@@ -213,6 +213,7 @@ combine_hexp <-function(x, subgenomes, name_to = NULL) {
 #'
 #' @seealso \linkS4class{ExpMX}
 #' @export
+
 newExpMX <- function(x, group, mapping_table) {
     if (is.vector(group)) group <- data.frame(group  = group)
     
@@ -223,8 +224,13 @@ newExpMX <- function(x, group, mapping_table) {
     # remove undef genes
     undef_genes <- setdiff(rownames(x), unlist(mapping_table))
     if (length(undef_genes) > 0) {
-        warning(length(undef_genes), ' genes in expression data are not defined in mapping table. They will be ignored. ')
-        warning('Undefined genes: ', paste(head(undef_genes, 10), collapse = ', '), ifelse(length(undef_genes) > 10, ', ...', ''), '\n')
+        warning(length(undef_genes),
+                ' genes in expression data are not defined in mapping table. They will be ignored.',
+                '\n',
+                'Undefined genes: ',
+                paste(head(undef_genes, 10), collapse = ', '),
+                ifelse(length(undef_genes) > 10, ', ...', ''),
+                '\n')
         x <- x[setdiff(rownames(x), undef_genes), , drop = FALSE]
     }
     
@@ -232,9 +238,23 @@ newExpMX <- function(x, group, mapping_table) {
     valid_homeologs <- NULL
     for ( i in seq_len(n_subgenomes)) {
         ids <- seq(1, nrow(mapping_table))
-        valid_homeologs <- c(valid_homeologs, ids[(mapping_table[, i] %in% rownames(x))])
+        if (is.null(valid_homeologs)) {
+            valid_homeologs <- ids[(mapping_table[, i] %in% rownames(x))]
+        } else {
+            valid_homeologs <- intersect(valid_homeologs, ids[(mapping_table[, i] %in% rownames(x))])
+        }
     }
-    valid_homeologs <- sort(unique(valid_homeologs))
+    valid_homeologs <- sort(valid_homeologs)
+    unvalid_homeologs <- mapping_table[!(seq_len(nrow(mapping_table)) %in% valid_homeologs), ]
+    if (nrow(unvalid_homeologs) > 0) {
+        warning(nrow(unvalid_homeologs),
+                ' homeolog tuples are only defined in one of subgenomes. They will be ignored.',
+                '\n',
+                'Examples of ignored tuples:\n',
+                paste(apply(head(unvalid_homeologs, 10), 1, paste, collapse = ', '), collapse = '\n'),
+                ifelse(nrow(unvalid_homeologs) > 10, '\n...', ''),
+                '\n')
+    }
     
     # format
     for (i in seq_len(n_subgenomes)) {
@@ -242,6 +262,7 @@ newExpMX <- function(x, group, mapping_table) {
         rownames(x_counts[[i]]) <- NULL
         colnames(x_counts[[i]]) <- NULL
     }
+    
     new("ExpMX",
         data = x_counts,
         gene_names = mapping_table[valid_homeologs, 1],
