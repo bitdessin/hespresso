@@ -11,7 +11,7 @@
 #' x <- sim_homeolog_counts(100)
 #' plot_HER_distr(x)
 #' 
-#' @importFrom ggplot2 ggplot geom_point geom_histogram aes_string
+#' @importFrom ggplot2 ggplot geom_point geom_histogram aes
 #' @export
 plot_HER_distr <- function(x, base = 1) {
     n_subgenomes <- length(x@data)
@@ -28,7 +28,7 @@ plot_HER_distr <- function(x, base = 1) {
         if (base > 0) {
             hexp_ratios <- data.frame(HER = hexp_ratios[, base])
             her_figs[[group_name]] <- ggplot(data = hexp_ratios, 
-                                             aes_string(x = 'HER')) +
+                                             aes(x = .data[['HER']])) +
                 geom_histogram()
         }
     }
@@ -62,7 +62,7 @@ plot_HER_distr <- function(x, base = 1) {
 #' plot_HER(x)
 #' 
 #' @importFrom ggplot2 ggplot geom_point geom_hline geom_vline geom_abline
-#' @importFrom ggplot2 aes_string xlab ylab scale_colour_discrete
+#' @importFrom ggplot2 aes xlab ylab scale_colour_discrete
 #' @export
 plot_HER <- function(x,
                      base = 1, groups = NULL, label = NULL,
@@ -76,13 +76,22 @@ plot_HER <- function(x,
     her_1 <- .calc_hexp_ratios(hexp_1)
     her_2 <- .calc_hexp_ratios(hexp_2)
     
-    her_df <- data.frame(x = her_1[, base], y = her_2[, base])
+    her_df <- data.frame(id = x@gene_names, x = her_1[, base], y = her_2[, base])
     if (!is.null(label)) her_df$label <- label
     
     g <- ggplot()
     if (is.null(label)) {
-        g <- g + geom_point(aes_string(x = 'x', y = 'y'),
-                            alpha = alpha, size = size, data = her_df)
+        g <- withCallingHandlers(
+            g + geom_point(aes(x = .data[['x']], y = .data[['y']], text = .data[['id']]),
+                           alpha = alpha, size = size, data = her_df),
+            warning = function(w) {
+                msg <- conditionMessage(w)
+                # suppress warning as geom_point does not support `text` option.
+                if (grepl("Ignoring unknown aesthetics", msg, fixed = TRUE)) {
+                    invokeRestart("muffleWarning")
+                }
+            }
+        )
     } else {
         if (!is.factor(label)) {
             tt <- table(label)
@@ -90,9 +99,17 @@ plot_HER <- function(x,
             her_df$label <- factor(her_df$label, levels = names(tt)[od])
         }
         for (cl in levels(her_df$label)) {
-            g <- g + geom_point(aes_string(x = 'x', y = 'y', color = 'label'),
-                                alpha = alpha, size = size,
-                                data  = her_df[her_df$label == cl, ])
+            g <- withCallingHandlers(
+                g + geom_point(aes(x = .data[['x']], y = .data[['y']], text = .data[['id']], color = .data[['label']]),
+                               alpha = alpha, size = size,
+                               data  = her_df[her_df$label == cl, ]),
+                warning = function(w) {
+                    msg <- conditionMessage(w)
+                    if (grepl("Ignoring unknown aesthetics", msg, fixed = TRUE)) {
+                        invokeRestart("muffleWarning")
+                    }
+                }
+            )
         }
         g <- g + scale_colour_discrete(drop = FALSE)
     }
@@ -103,3 +120,4 @@ plot_HER <- function(x,
         xlab(groups[1]) +
         ylab(groups[2])
 }
+

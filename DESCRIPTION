@@ -1,7 +1,7 @@
 Package: hespresso
 Title: LRT for Detecting Shifts in Homeolog Expression Ratios
     from Allopolyploid RNA-seq Data
-Version: 1.0.3
+Version: 1.0.4
 Authors@R: 
     person(given = "Jianqiang", family = "Sun",
            email = "sun@bitdessin.dev",
@@ -34,8 +34,9 @@ Imports:
 Suggests:
     gridExtra,
     pROC,
+    UpSetR,
     testthat,
-    UpSetR
+    plotly
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2

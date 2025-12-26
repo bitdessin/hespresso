@@ -41,7 +41,7 @@ jobs:
       - name: Install R packages
         run: |
           Rscript -e '
-            install.packages(c("bookdown", "gridExtra", "UpSetR", "pROC", "testthat", "future", "future.apply", "progress", "progressr", "BiocManager"))
+            install.packages(c("bookdown", "gridExtra", "UpSetR", "pROC", "testthat", "plotly", "future", "future.apply", "progress", "progressr", "BiocManager"))
             BiocManager::install("edgeR")
             install.packages("cmdstanr", repos = c("https://stan-dev.r-universe.dev", getOption("repos")))
             cmdstanr::install_cmdstan()
