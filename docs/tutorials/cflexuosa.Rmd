@@ -190,7 +190,7 @@ which is implemented in the `r pkg("UpSetR", "cran")` package [@ref_upsetr].
 
 
 ```{r tt-cflex-overlaps, fig.cap="Overlap of homeologs with shifted expression ratios detected by HOBIT and HomeoRoq."}
-library("UpSetR")
+library(UpSetR)
 sig_homeologs <- list(
     HOBIT = x_output$gene[x_output$qvalue < 0.01],
     HomeoRoq = x_homeoroq$gene[x_homeoroq$qvalue < 0.01]

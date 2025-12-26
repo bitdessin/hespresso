@@ -28,21 +28,33 @@ jobs:
 
       - name: Setup pandoc
         uses: r-lib/actions/setup-pandoc@v2
-    
+
+      - name: Install R dependencies
+        uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+            cache-version: 1
+            packages: |
+                bookdown
+                gridExtra
+                UpSetR
+                pROC
+                plotly
+                testthat
+                future
+                future.apply
+                progress
+                progressr
+                edgeR
+
       - name: Setup cache
         uses: actions/cache@v4
         with:
-          path: |
-            ~/.cache/R
-            ~/.local/share/R
-            ~/.cmdstan
-          key: ${{ runner.os }}-r-${{ hashFiles('**/DESCRIPTION') }}
+          path: ~/.cmdstan
+          key: ${{ runner.os }}-cmdstan
 
-      - name: Install R packages
+      - name: Install STAN
         run: |
           Rscript -e '
-            install.packages(c("bookdown", "gridExtra", "UpSetR", "pROC", "testthat", "plotly", "future", "future.apply", "progress", "progressr", "BiocManager"))
-            BiocManager::install("edgeR")
             install.packages("cmdstanr", repos = c("https://stan-dev.r-universe.dev", getOption("repos")))
             cmdstanr::install_cmdstan()
           '
