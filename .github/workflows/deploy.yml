@@ -61,16 +61,21 @@ jobs:
 
       - name: Build and install hespresso package
         run: |
+          PKG_NAME=$(awk -F': *' '$1=="Package"{print $2}' DESCRIPTION)
+          PKG_VERSION=$(awk -F': *' '$1=="Version"{print $2}' DESCRIPTION)
+          PKG_FILE="${PKG_NAME}_${PKG_VERSION}.tar.gz"
           R CMD build .
-          PACKAGE_FILE=$(ls hespresso_*.tar.gz)
-          R CMD INSTALL $PACKAGE_FILE
-          echo "PACKAGE_FILE=$PACKAGE_FILE" >> $GITHUB_ENV
+          R CMD INSTALL $PKG_FILE
+          echo "PKG_NAME=$PKG_NAME" >> $GITHUB_ENV
+          echo "PKG_VERSION=$PKG_VERSION" >> $GITHUB_ENV
+          echo "PKG_FILE=$PKG_FILE" >> $GITHUB_ENV
 
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
-          name: ${{ env.PACKAGE_FILE }}
+          name: ${{ env.PKG_NAME }} ${{ env.PKG_VERSION }}
+          files: ${{ env.PKG_FILE }}
 
       - name: Build docs
         run: |
@@ -82,4 +87,3 @@ jobs:
           path: 'docs/_html'
 
       - uses: actions/deploy-pages@v4
-
