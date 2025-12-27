@@ -128,6 +128,6 @@ x_output <- hobit(x, n_threads = 8, parallel_chains = 1, iter_warmup = 100, iter
 \references{
 Sun J, Sese J, Shimizu KK.
 A likelihood ratio test for detecting shifts in homeolog expression ratios in allopolyploids.
-New Phytol., 2025.
+New Phytol., 249(1):603-617, 2026.
 \doi{10.1111/nph.70648}
 }

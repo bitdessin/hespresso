@@ -357,7 +357,7 @@
 #'
 #' @references Sun J, Sese J, Shimizu KK.
 #'      A likelihood ratio test for detecting shifts in homeolog expression ratios in allopolyploids.
-#'      New Phytol., 2025.
+#'      New Phytol., 249(1):603-617, 2026.
 #'      \doi{10.1111/nph.70648}
 #'      
 #' @examples

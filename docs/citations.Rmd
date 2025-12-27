@@ -4,7 +4,7 @@ If you use HOBIT, please cite:
 
 - Sun J, Sese J, Shimizu KK.
     A likelihood ratio test for detecting shifts in homeolog expression ratios in allopolyploids.
-    New Phytol., 2025.
+    New Phytol. 249(1):603-617, 2026.
     [10.1111/nph.70648](https://doi.org/10.1111/nph.70648)
 
 
