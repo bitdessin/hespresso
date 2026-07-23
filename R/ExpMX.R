@@ -213,7 +213,6 @@ combine_hexp <-function(x, subgenomes, name_to = NULL) {
 #'
 #' @seealso \linkS4class{ExpMX}
 #' @export
-
 newExpMX <- function(x, group, mapping_table) {
     if (is.vector(group)) group <- data.frame(group  = group)
     

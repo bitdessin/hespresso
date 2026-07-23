@@ -138,7 +138,7 @@
                      objFirst = g2_sub1,
                      objSecond  = g2_sub2,
                      ctrlRatio = g1_sub1 / (g1_sub1 + g1_sub2),
-                     objRatio = g2_sub1 / (g2_sub1 + g1_sub2),
+                     objRatio = g2_sub1 / (g2_sub1 + g2_sub2),
                      ratioSD = dOR$ratioSD)
     
     colnames(df) <- c(
