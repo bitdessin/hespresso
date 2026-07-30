@@ -1,7 +1,7 @@
 Package: hespresso
 Title: LRT for Detecting Shifts in Homeolog Expression Ratios
     from Allopolyploid RNA-seq Data
-Version: 1.0.5
+Version: 1.0.6
 Authors@R:
     person(given = "Jianqiang", family = "Sun",
            email = "sun@bitdessin.dev",

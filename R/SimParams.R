@@ -31,6 +31,6 @@ setClass("SimParams",
              params = "data.frame",
              nls = "ANY",
              
-             mu = "ListOrMatrix",
-             her = "ListOrMatrix"
+             mu = "list",
+             her = "list"
          ))

@@ -1,8 +1,3 @@
-setClassUnion("VecOrNULL", c("vector", "NULL"))
-setClassUnion("NumericOrNULL", c("numeric", "NULL"))
-setClassUnion("ListOrMatrix", c("list", "matrix"))
-
-
 #' Class to Store RNA-seq Read Count Data
 #'
 #' An S4 class for storing RNA-seq read count data, including gene or homeolog
@@ -20,8 +15,8 @@ setClassUnion("ListOrMatrix", c("list", "matrix"))
 #' @exportClass ExpMX
 setClass("ExpMX",
          slots = c(
-             data = "ListOrMatrix",
-             gene_names = "VecOrNULL",
+             data = "list",
+             gene_names = "character",
              exp_design = "data.frame",
              meta = "ANY"
          ))
@@ -73,51 +68,52 @@ setMethod(
 })
 
 
-#' Extract a subset of ExpMX Object
+#' Extract a Subset of an ExpMX Object
 #'
-#' Extracts a subset of homeologs or replicates from an `ExpMX` object.
-#' 
-#' @name [-method
-#' @docType methods
+#' Extracts homeolog tuples or samples from an `ExpMX` object.
+#'
+#' @name subset-ExpMX
 #' @rdname subset-ExpMX
+#' @docType methods
 #' @aliases [,ExpMX-method
+#' @aliases [,ExpMX,ANY,ANY,ANY-method
 #'
-#' @param x An \linkS4class{ExpMX} class object.
-#' @param i A logical expression or an integer vector specifying which gene
-#'      (rows) to retain.
-#' @param j A logical expression or an integer vector specifying which replicate
-#'      (columns) to retain.
-#' @param ... NOT USED. Included for consistency with the base `[` function.
-#' @param drop NOT USED. Included for consistency with the base `[` function.
+#' @param x An \linkS4class{ExpMX} object.
+#' @param i A logical or integer vector specifying the homeolog tuples
+#'      to retain.
+#' @param j A logical or integer vector specifying the samples to retain.
+#' @param ... Unused. Included for consistency with the `[` generic.
+#' @param drop Unused. Included for consistency with the `[` generic.
 #'
-#' @return A subsetted \linkS4class{ExpMX} class object.
-#' 
+#' @return A subsetted \linkS4class{ExpMX} object.
+#'
 #' @examples
 #' x <- sim_homeolog_counts(n_genes = 100)
 #' x_10 <- x[seq_len(10), ]
-#' 
+#'
 #' @seealso \linkS4class{ExpMX}
 #' @export
 setMethod(
     f = "[",
-    signature = "ExpMX",
+    signature = signature(
+        x = "ExpMX",
+        i = "ANY",
+        j = "ANY",
+        drop = "ANY"
+    ),
     definition = function(x, i, j, ..., drop) {
         if (missing(i)) i <- NULL
         if (missing(j)) j <- NULL
-        
         i <- .int2logicalvec(i, nrow(x@data[[1]]))
         j <- .int2logicalvec(j, ncol(x@data[[1]]))
-        
         for (s in seq_along(x@data)) {
-            x@data[[s]] <- x@data[[s]][i, j]
+            x@data[[s]] <- x@data[[s]][i, j, drop = FALSE]
         }
-        
         x@gene_names <- x@gene_names[i]
-        x@exp_design <- subset(x@exp_design, j)
-        
+        x@exp_design <- x@exp_design[j, , drop = FALSE]
         x
-})
-
+    }
+)
 
 
 #' Combine Homeolog Expression Across Subgenomes
@@ -135,7 +131,7 @@ setMethod(
 #' For example, to analyze the expression ratio between the combined expression
 #' of subgenomes A and B versus D, users can apply this function to merge
 #' A and B into a single subgenome.
-#' 
+#'
 #' @param x An \linkS4class{ExpMX} class object.
 #' @param subgenomes A vector of indices specifying which subgenomes to combine.
 #' @param name_to A character string specifying the name of the new combined
@@ -144,12 +140,12 @@ setMethod(
 #'
 #' @return An updated \linkS4class{ExpMX} object with the specified subgenomes
 #'      combined.
-#' 
+#'
 #' @examples
 #' x <- sim_homeolog_counts(n_genes = 100, n_subgenomes = 3)
 #' x_combined <- combine_hexp(x, subgenomes = c(1, 2))
 #' x_combined
-#' 
+#'
 #' @export
 combine_hexp <-function(x, subgenomes, name_to = NULL) {
     combined_data <- vector('list', length = length(x@data) - length(subgenomes) + 1)
@@ -174,7 +170,7 @@ combine_hexp <-function(x, subgenomes, name_to = NULL) {
     } else {
         combined_name[last_i] <- name_to
     }
-    
+
     names(combined_data) <- combined_name
     x@data <- combined_data
     x
@@ -214,12 +210,21 @@ combine_hexp <-function(x, subgenomes, name_to = NULL) {
 #' @seealso \linkS4class{ExpMX}
 #' @export
 newExpMX <- function(x, group, mapping_table) {
-    if (is.vector(group)) group <- data.frame(group  = group)
-    
+    if (is.vector(group)) {
+        group <- data.frame(group = group)
+    } else {
+        if (!('group' %in% colnames(group))) {
+            stop('The experimental design must has a column named "group".')
+        }
+    }
+    if (!is.factor(group$group)) {
+        group$group <- factor(group$group, levels = unique(group$group))
+    }
+
     n_subgenomes <- ncol(mapping_table)
     x_counts <- vector('list', length = n_subgenomes)
     names(x_counts) <- colnames(mapping_table)
-    
+
     # remove undef genes
     undef_genes <- setdiff(rownames(x), unlist(mapping_table))
     if (length(undef_genes) > 0) {
@@ -232,7 +237,7 @@ newExpMX <- function(x, group, mapping_table) {
                 '\n')
         x <- x[setdiff(rownames(x), undef_genes), , drop = FALSE]
     }
-    
+
     # find homeolog tuples in expression data
     valid_homeologs <- NULL
     for ( i in seq_len(n_subgenomes)) {
@@ -254,14 +259,14 @@ newExpMX <- function(x, group, mapping_table) {
                 ifelse(nrow(unvalid_homeologs) > 10, '\n...', ''),
                 '\n')
     }
-    
+
     # format
     for (i in seq_len(n_subgenomes)) {
         x_counts[[i]] <- as.matrix(x[mapping_table[valid_homeologs, i], ])
         rownames(x_counts[[i]]) <- NULL
         colnames(x_counts[[i]]) <- NULL
     }
-    
+
     new("ExpMX",
         data = x_counts,
         gene_names = mapping_table[valid_homeologs, 1],

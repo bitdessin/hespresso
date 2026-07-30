@@ -1,3 +1,7 @@
+# hespresso 1.0.6
+
+* Fixed bug in group name handling during dispersion estimation.
+
 # hespresso 1.0.5
 
 BUG FIX

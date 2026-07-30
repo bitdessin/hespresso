@@ -440,11 +440,13 @@ sim_homeolog_counts <- function(n_genes = 10000, n_replicates = c(3, 3),
         colnames(counts[[i]]) <- paste(rep(group_names, times = n_replicates),
                                        sequence(n_replicates), sep = '__')
     }
+    
+    group_vec <- rep(group_names, times = n_replicates)
+    group_vec <- factor(group_vec, levels = unique(group_vec))
     new("ExpMX",
         data = counts,
         gene_names = gene_names,
-        exp_design = data.frame(group = rep(group_names, times = n_replicates),
-                                replicate = sequence(n_replicates)),
+        exp_design = data.frame(group = group_vec, replicate = sequence(n_replicates)),
         meta = new("SimParams",
                    n_subgenomes = n_subgenomes,
                    n_genes = n_genes,

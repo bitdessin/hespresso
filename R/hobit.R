@@ -61,7 +61,7 @@
                      nrow = x$N_CONDITIONS, ncol = x$N_SUBGENOMES)
     replicate_id <- 1
     for (i in seq_len(x$N_CONDITIONS)) {
-        exp_sum <- rep(0, length = x$N_SUBGENOME)
+        exp_sum <- rep(0, length = x$N_SUBGENOMES)
         for (j in seq_len(x$N_REPLICATES[i])) {
             exp_sum <- exp_sum + x$HOMEOLOG_EXP[replicate_id, ]
             replicate_id <- replicate_id + 1
@@ -75,18 +75,15 @@
 
 
 # Estimate Dispersion from Observed Count Data Using edgeR
-# 
+#
 # @details
 # Dispersion is estimated for each group
 # if the data consists of multiple biological replicates.
-# If `no_replicate` is set to `TRUE`, dispersion is estimated from  
-# all counts without using group information. 
+# If `no_replicate` is set to `TRUE`, dispersion is estimated from
+# all counts without using group information.
 #
 #' @importFrom edgeR DGEList estimateDisp
-.hb.est_dispersion_mx <- function(x, group, no_replicate) {
-    n_genes <- dim(x)
-    group_names <- base::unique(group)
-    
+.hb.est_dispersion_mx <- function(x, group, group_names, no_replicate) {
     gene_disp <- matrix(0, nrow = nrow(x), ncol = length(group_names))
     if (no_replicate) {
         y <- edgeR::DGEList(counts = x)
@@ -96,53 +93,55 @@
         }
     } else {
         for (group_id in seq_along(group_names)) {
-            y <- edgeR::DGEList(counts = x[, group == group_names[group_id]])
+            idx <- group == group_names[group_id]
+            y <- edgeR::DGEList(counts = x[, idx, drop = FALSE])
             y <- suppressMessages(edgeR::estimateDisp(y))
             gene_disp[, group_id] <- y$tagwise.dispersion
         }
     }
+    colnames(gene_disp) <- group_names
     1 / gene_disp
 }
 
 
 # Estimate Dispersion for Genes and Homeologs
-# 
+#
 # @details
-# This function estimates dispersions for genes and homeologs.  
-# To estimate gene dispersions, the function sums all homeolog expressions.  
+# This function estimates dispersions for genes and homeologs.
+# To estimate gene dispersions, the function sums all homeolog expressions.
 # It then calculates homeolog dispersions for each subgenome.
-.hb.est_dispersion <- function(x, no_replicate) {
+.hb.est_dispersion <- function(x, exp_group, group_names, no_replicate) {
     gene_exp <- 0
     for (i in seq_along(x@data)) {
         gene_exp <- gene_exp + x@data[[i]]
     }
-    gene_disp <- .hb.est_dispersion_mx(gene_exp, x@exp_design$group, no_replicate)
-    
-    homeolog_disp <- vector('list', length(x@data))
+    gene_disp <- .hb.est_dispersion_mx(gene_exp, exp_group, group_names, no_replicate)
+    homeolog_disp <- vector("list", length(x@data))
     for (i in seq_along(x@data)) {
         homeolog_disp[[i]] <- .hb.est_dispersion_mx(x@data[[i]],
-                                    x@exp_design$group, no_replicate)
+            exp_group, group_names, no_replicate)
     }
-    
     list(gene = gene_disp, homeolog = homeolog_disp)
 }
 
 
 # Convert Matrix Data to List
-# 
-# Converts a list of homeolog expression matrices into a list containing  
+#
+# Converts a list of homeolog expression matrices into a list containing
 # homeolog expression data, prior parameters,
-# and other information for modeling. 
+# and other information for modeling.
 .hb.format_data <- function(x, use_Dirichlet, eps, no_replicate) {
     x_list <- vector('list', length = nrow(x@data[[1]]))
-    
-    exp_group <- x@exp_design$group
-    .groups <- base::table(exp_group)
-    group_names <- names(.groups)
-    n_replicates <- as.numeric(.groups)
-    
-    disp <- .hb.est_dispersion(x, no_replicate)
-   
+
+    exp_group <- droplevels(x@exp_design$group)
+    if (!is.factor(exp_group)) {
+        exp_group <- factor(exp_group, levels = unique(exp_group))
+    }
+    group_names <- levels(exp_group)
+    n_replicates <- as.numeric(table(exp_group))
+
+    disp <- .hb.est_dispersion(x, exp_group, group_names, no_replicate)
+
     for (i in seq_along(x_list)) {
         idx <- 1
         hexp <- matrix(NA_real_, nrow = sum(n_replicates), ncol = length(x@data))
@@ -153,11 +152,11 @@
             }
             idx <- idx + n_replicates[g]
         }
-        
+
         gexp_upper <- max(max(rowSums(hexp)) * 10, 100)
         gexp_lower <- max(rowSums(hexp)) * 0.1
         if (gexp_lower < 100) gexp_lower <- 0
-        
+
         x_fmt <- list(
             N_SUBGENOMES = ncol(hexp),
             N_CONDITIONS = length(group_names),
@@ -264,7 +263,6 @@
            qvalue = NA_real_)
     v
 }
-
 
 #' HOBIT: Detecting Shifts in Homeolog Expression Ratios
 #' 
@@ -461,3 +459,4 @@ hobit <- function(x,
                stats[, c('logLik_H0', 'logLik_H1')], 
                check.names = FALSE)
 }
+
