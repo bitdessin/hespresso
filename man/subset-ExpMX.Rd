@@ -7,7 +7,7 @@
 \alias{[,ExpMX,ANY,ANY,ANY-method}
 \title{Extract a Subset of an ExpMX Object}
 \usage{
-\S4method{[}{ExpMX}(x, i, j, ..., drop = TRUE)
+\S4method{[}{ExpMX,ANY,ANY,ANY}(x, i, j, ..., drop = TRUE)
 }
 \arguments{
 \item{x}{An \linkS4class{ExpMX} object.}

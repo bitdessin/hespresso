@@ -22,9 +22,41 @@ setClass("ExpMX",
          ))
 
 setValidity("ExpMX", function(object) {
-    if (!('group' %in% colnames(object@exp_design)))
-        stop('The data.frame `exp_design` ',
-             'should contain a column named `group`.')
+    if (!('group' %in% colnames(object@exp_design))) {
+        stop('The data.frame `exp_design` should contain a column named `group`.',
+             call. = FALSE)
+    }
+
+    if (any(grepl("__\\.\\.__", object@exp_design$group))) {
+        stop("The group name can not contain `__..__` as the `__..__` is reserved for treating data labels during the analysis progress.",
+             call. = FALSE)
+    }
+
+    if (length(unique(object@exp_design$group)) < 2) {
+        stop("The number of group should be equal or larger than 2.",
+             call. = FALSE)
+    }
+
+    if (anyNA(object@exp_design$group)) {
+        stop("The `group` column must not contain NA.", call. = FALSE)
+    }
+
+    if (length(object@data) < 2) {
+        stop("The number of subgenome should be equal or larger than 2.")
+    }
+
+    ref_dim <- dim(object@data[[1L]])
+    valid_dims <- vapply(object@data, function(m) identical(dim(m), ref_dim), logical(1L))
+    if (!all(valid_dims)) {
+        stop("All subgenome count matrices must have identical dimensions.", call. = FALSE)
+    }
+
+    if (ncol(object@data[[1L]]) != nrow(object@exp_design)) {
+        stop("The number of samples in `data` must match the number of rows in `exp_design`.",
+        call. = FALSE)
+    }
+
+    TRUE
 })
 
 
@@ -218,6 +250,7 @@ newExpMX <- function(x, group, mapping_table) {
         }
     }
     if (!is.factor(group$group)) {
+        message('The `group` has been converted into factors.')
         group$group <- factor(group$group, levels = unique(group$group))
     }
 

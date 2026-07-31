@@ -2,132 +2,60 @@
 % Please edit documentation in R/hobit.R
 \name{hobit}
 \alias{hobit}
-\title{HOBIT: Detecting Shifts in Homeolog Expression Ratios}
+\title{HOBIT: Detect Shifts in Homeolog Expression Ratios}
 \usage{
-hobit(
-  x,
-  use_Dirichlet = FALSE,
-  no_replicate = FALSE,
-  eps = 0.001,
-  dist = c("NB", "ZINB"),
-  n_threads = getOption("mc.cores", 1),
-  parallel_chains = 1,
-  ...
-)
+hobit(x, method = c("mcmc", "mle"), ...)
 }
 \arguments{
-\item{x}{An \linkS4class{ExpMX} object containing normalized homeolog
-expression data (RNA-seq read counts).}
+\item{x}{An \linkS4class{ExpMX} object.}
 
-\item{use_Dirichlet}{Logical. Whether to apply a Dirichlet prior distribution
-when sampling expression ratios.}
+\item{method}{Character string specifying the inference method. Available
+values are \code{"mcmc"} and \code{"mle"}. The default is \code{"mcmc"}.}
 
-\item{no_replicate}{Logical. If \code{TRUE}, all replicates are treated as a
-single condition when estimating dispersion. This avoids errors in cases
-where no biological replicates are available.}
-
-\item{eps}{Numeric. Minimum threshold for homeolog expression. Values below
-this threshold are replaced with 0 to avoid instability during MCMC sampling,
-especially when fitting NB models with near-zero means.}
-
-\item{dist}{Character. Distribution used to model expression data.
-Options: \code{'NB'} (negative binomial) or \code{'ZINB'} (zero-inflated negative
-binomial).}
-
-\item{n_threads}{Integer. Number of threads for parallelizing computation
-across homeologs. This parallelization is independent of MCMC sampling,
-which is controlled by \code{parallel_chains}. Defaults to the global option
-\code{'mc.cores'}, or 1 if not set. In practice, using a larger \code{n_threads}
-with \code{parallel_chains = 1} typically reduces overall execution time
-compared to allocating more threads to MCMC chains.}
-
-\item{parallel_chains}{Integer. Number of parallel MCMC chains. Passed
-directly to \code{\link[cmdstanr]{sample}} in the \pkg{cmdstanr} package.
-If both \code{n_threads} and \code{parallel_chains} exceed 1, the total number of
-threads used is \verb{n_threads × parallel_chains}. Ensure adequate resources
-are available before increasing both parameters.}
-
-\item{...}{Additional arguments passed to
-\code{\link[cmdstanr]{sample}} (e.g., \code{chains}, \code{iter_warmup},
-\code{iter_sampling}, \code{thin}).}
+\item{...}{Additional arguments passed to \code{\link[=hobit_mcmc]{hobit_mcmc()}} or \code{\link[=hobit_mle]{hobit_mle()}},
+according to \code{method}.}
 }
 \value{
-A \code{data.frame} with one row per homeolog, containing:
-\itemize{
-\item \code{pvalue}: p-value from the LRT using normalized likelihoods.
-\item \code{qvalue}: Benjamini–Hochberg adjusted \code{pvalue}.
-\item \code{raw_pvalue}: p-value from the LRT using likelihoods.
-\item \code{raw_qvalue}: Benjamini–Hochberg adjusted \code{raw_pvalue}.
-\item \verb{D__$__*}: Difference in expression ratios for subgenome \code{$}
-between the two groups represented by \code{*}.
-\item \verb{OR__$__*}: Odds ratio of expression ratios for subgenome \code{$}
-between the two groups represented by \code{*}.
-\item \code{Dmax}: Maximum absolute difference in expression ratios (\verb{D__$__*})
-observed across all subgenomes and group comparisons.
-\item \code{ORmax}: Maximum odds ratio in expression ratios (\verb{OR__$__*})
-observed across all subgenomes and group comparisons.
-\item \verb{theta0__$}: Posterior expression ratio estimates shared
-across all conditions, where \code{$} denotes the subgenome name.
-\item \verb{theta1__$__*}: Posterior expression ratio estimates specific
-to each condition,
-where \code{$} denotes the subgenome name and \code{*} denotes the group name.
-\item \code{logLik_H0}: Log-likelihood of the reduced model.
-\item \code{logLik_H1}: Log-likelihood of the full model.
-}
-All statistics are derived from MCMC samples
-and may differ from those calculated directly from RNA-seq read counts.
-Additionally, \code{NA} in the output indicates
-that the homeolog is expressed in only one condition,
-making ratio comparisons infeasible.
+A data frame with one row per homeolog tuple. The returned columns
+depend on the selected inference method. See \code{\link[=hobit_mcmc]{hobit_mcmc()}} and
+\code{\link[=hobit_mle]{hobit_mle()}} for details.
 }
 \description{
-A statistical framework for identifying changes in homeolog expression ratios
-across experimental conditions in allopolyploid species.
+Tests whether homeolog expression ratios differ among experimental
+conditions in allopolyploid RNA-seq data.
 }
 \details{
-HOBIT is a statistical test for detecting homeologs with differential
-homeolog expression ratios across multiple experimental conditions
-in allopolyploid species, using RNA-seq read count data.
-It employs a likelihood ratio test (LRT) to compare two hierarchical models:
-a full model that allows HERs to vary among conditions,
-and a reduced model that assumes constant ratios across all conditions.
+\code{hobit()} is the main entry point for HOBIT analysis. It dispatches the
+analysis to either the MCMC implementation or the maximum-likelihood
+implementation according to \code{method}.
 
-Expression counts are modeled using a negative binomial (NB) distribution.
-Specifically, the expression level of a homeolog from the \eqn{i}-th subgenome,
-denoted \eqn{x_{i}}, is assumed to follow an NB distribution with mean
-\eqn{\mu \theta_{i}} and dispersion \eqn{\phi}, where \eqn{\mu} is the total
-gene expression across subgenomes, \eqn{\theta_{i}} is the proportion of
-expression attributable to the \eqn{i}-th subgenome, and \eqn{\phi} is the
-dispersion parameter:
-
-\deqn{
-x_{i} \sim NB(\mu \theta_{i}, \phi)
+Two methods are available:
+\itemize{
+\item \code{"mcmc"} uses the original Stan-based MCMC implementation evaluated in
+Sun et al. (2026).
+\item \code{"mle"} fits the null and alternative models by maximum likelihood,
+and then performs a likelihood ratio test.
 }
 
-By default, \eqn{\mu} and \eqn{\boldsymbol{\theta}} are sampled from
-uninformative priors, while dispersion \eqn{\phi} is estimated using
-\code{\link[edgeR]{estimateDisp}} from the \pkg{edgeR} package.
-
-HOBIT uses Markov chain Monte Carlo (MCMC) sampling to fit both the full and
-reduced models and compute likelihoods for the LRT. The main entry point is
-the \code{hobit()} function, which performs parameter estimation, model fitting,
-likelihood computation, and hypothesis testing.
+Method-specific arguments supplied through \code{...} are passed directly to
+\code{\link[=hobit_mcmc]{hobit_mcmc()}} or \code{\link[=hobit_mle]{hobit_mle()}}.
 }
 \examples{
-x <- sim_homeolog_counts(10)
-x_output <- hobit(x)
+x <- sim_homeolog_counts(n_genes = 10)
 
-# MCMC sampling options
-x_output <- hobit(x, chains = 2, iter_warmup = 100, iter_sampling = 100)
+x_output_mcmc_1 <- hobit(x)
+# x_output_mcmc_2 <- hobit(x, method = "mcmc")
 
-# parallel processing
-x_output <- hobit(x, n_threads = 1, parallel_chains = 8, iter_warmup = 100, iter_sampling = 100)
-x_output <- hobit(x, n_threads = 8, parallel_chains = 1, iter_warmup = 100, iter_sampling = 100)
+x_output_mle <- hobit(x, method = "mle")
 
 }
 \references{
 Sun J, Sese J, Shimizu KK.
-A likelihood ratio test for detecting shifts in homeolog expression ratios in allopolyploids.
-New Phytol., 249(1):603-617, 2026.
+A likelihood ratio test for detecting shifts in homeolog expression ratios
+in allopolyploids.
+\emph{New Phytologist}. 2026;249(1):603--617.
 \doi{10.1111/nph.70648}
+}
+\seealso{
+\code{\link[=hobit_mcmc]{hobit_mcmc()}}, \code{\link[=hobit_mle]{hobit_mle()}}, \linkS4class{ExpMX}
 }

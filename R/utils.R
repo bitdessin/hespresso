@@ -10,7 +10,7 @@
 
 
 # Set default group name
-# 
+#
 # @param groups A vector of characters indicating group names.
 # @param sel_groups NULL or a vector containing two elements indicating the
 #        selected group names. If NULL is given, the first two group names
@@ -33,19 +33,21 @@
 }
 
 
-# Calculate gene expression by aggregating all homeolog expression
+# Calculate homeolog tuple-wise expression by summing up all homeolog expression
 #' @importFrom methods is
 .calc_gexp <- function(x) {
     if (!is(x, 'ExpMX'))
         stop('The input data should be stored as ExpMX class.')
-    
-    gexp <- 0
-    for (i in seq_along(x@data)) {
-        gexp <- gexp + x@data[[i]]
-    }
-    gexp
-}
 
+    h_exp <- 0
+    for (i in seq_along(x@data)) {
+        h_exp <- h_exp + x@data[[i]]
+    }
+    h_exp
+}
+.calc_hexp <- function(x) {
+    .calc_gexp(x)
+}
 
 # Calculate homeolog expression ratios from expression matrix
 #
