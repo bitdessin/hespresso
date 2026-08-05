@@ -1,3 +1,16 @@
+# Select user-facing output columns unless diagnostic output is requested.
+.hobit.select_output <- function(output, .debug = FALSE) {
+    if (isTRUE(.debug)) {
+        return(output)
+    }
+
+    output[, c(
+        intersect(c("gene", "pvalue", "qvalue", "Dmax", "LRmax", "RRmax"), names(output)),
+        grep("^theta0__", names(output), value = TRUE)
+    ), drop = FALSE]
+}
+
+
 #' HOBIT: Detect Shifts in Homeolog Expression Ratios
 #'
 #' Tests whether homeolog expression ratios differ among experimental
@@ -20,12 +33,16 @@
 #' @param x An \linkS4class{ExpMX} object.
 #' @param method Character string specifying the inference method. Available
 #'   values are `"mcmc"` and `"mle"`. The default is `"mcmc"`.
+#' @param .debug Logical. If `TRUE`, return all statistical test results for
+#'   detailed analysis or debugging. If `FALSE`, return only the main
+#'   statistical test results.
 #' @param ... Additional arguments passed to [hobit_mcmc()] or [hobit_mle()],
 #'   according to `method`.
 #'
-#' @return A data frame with one row per homeolog tuple. The returned columns
-#'   depend on the selected inference method. See [hobit_mcmc()] and
-#'   [hobit_mle()] for details.
+#' @return A data frame with one row per homeolog tuple. By default, the result
+#'   contains `gene`, `pvalue`, `qvalue`, `Dmax`, `LRmax`, `RRmax`, and
+#'   `theta0__*` columns. Set `.debug = TRUE` to return all method-specific
+#'   columns.
 #'
 #' @seealso [hobit_mcmc()], [hobit_mle()], \linkS4class{ExpMX}
 #'
@@ -45,11 +62,11 @@
 #' x_output_mle <- hobit(x, method = "mle")
 #'
 #' @export
-hobit <- function(x, method = c("mcmc", "mle"), ...) {
+hobit <- function(x, method = c("mcmc", "mle"), .debug = FALSE, ...) {
     method <- match.arg(method)
     switch(
         method,
-        mcmc = hobit_mcmc(x, ...),
-        mle = hobit_mle(x, ...)
+        mcmc = hobit_mcmc(x, .debug = .debug, ...),
+        mle = hobit_mle(x, .debug = .debug, ...)
     )
 }

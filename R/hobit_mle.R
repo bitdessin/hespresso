@@ -89,7 +89,7 @@ NULL
 }
 
 
-# Estimate dispersion from a matrix using edgeR
+# Estimate dispersion from a matrix using edgeR.
 #
 #' @importFrom edgeR DGEList estimateDisp
 .hb.mle.est_dispersion_from_matrix <- function(x, gdata, nf, no_replicate) {
@@ -114,11 +114,11 @@ NULL
 
 
 
-# Estimate tuple-wise and subgenome-wise dispersion from ExpMX object
+# Estimate tuple-wise and subgenome-wise dispersion from an ExpMX object.
 #
-# The tuple-wise dispersion is estimated from the counts summed up counts
-# from all subgenomes for each homeolog tuple. In contrast,
-# the subgenome-wise dispersion is estimated for each subgenome independently.
+# Tuple-wise dispersion is estimated from counts summed across all subgenomes
+# for each homeolog tuple. In contrast, subgenome-wise dispersion is estimated
+# independently for each subgenome.
 .hb.mle.est_dispersion <- function(x, gdata, nf, no_replicate) {
     # tuple-wise
     h_disp <- .hb.mle.est_dispersion_from_matrix(.calc_hexp(x), gdata, nf, no_replicate)
@@ -249,13 +249,13 @@ NULL
 }
 
 
-# Generate placeholder with NA to store estimation results.
+# Generate an NA placeholder for estimation results.
 #' @importFrom utils combn
 .hb.mle.init_stats_tmpl <- function(inputs) {
-    # get all combinations of D_*, LR_*, RR_* stats by computing dummy value.
+    # Get all combinations of D_*, LR_*, and RR_* statistics with dummy values.
     effect_stats <- .hb.mle.calc_effects(inputs$.META$init_params$theta1, inputs)
 
-    # theta parameters
+    # Theta parameters.
     theta0_names <- paste0("theta0__", inputs$.META$subgenome_names)
     theta1_names <- unlist(lapply(seq_len(inputs$N_CONDITIONS), function(c) {
             paste0("theta1__", inputs$.META$subgenome_names, "__", inputs$.META$condition_names[c])
@@ -300,7 +300,7 @@ NULL
     logit_mx
 }
 
-# Convert data for TMB for fitting
+# Convert data for TMB fitting.
 .hb.mle.as_tmb_data <- function(inputs, model = c("H0", "H1"), theta = NULL, gene_exp_mu = NULL) {
     model <- match.arg(model)
 
@@ -325,7 +325,7 @@ NULL
         EPS = as.numeric(inputs$EPS)
     )
 
-    # TMB params
+    # TMB parameters.
     if (is.null(gene_exp_mu)) {
         gene_exp_mu <- inputs$.META$init_params$gene_exp_mu
     }
@@ -345,7 +345,7 @@ NULL
 }
 
 
-# Return the model giving the maximum log_lik
+# Return the model with the maximum log-likelihood.
 .hb.mle.best_fit <- function(fit_results) {
     valid <- vapply(fit_results, function(z) isTRUE(z$success), logical(1L))
     if (any(valid)) {
@@ -370,7 +370,7 @@ NULL
     out[paste0("optimizer_code_", model)] <- fit_result$convergence
     out[paste0("max_gradient_", model)] <- fit_result$max_gradient
     out[paste0("logLik_", model)] <- fit_result$log_lik
-    # fit theta
+    # Store fitted theta values.
     if (fit_result$success) {
         if (model == 'H0') {
             theta0_names <- paste0("theta0__", input$.META$subgenome_names)
@@ -382,7 +382,7 @@ NULL
             out[theta1_names] <- as.vector(t(fit_result$theta))
         }
     }
-    # fit code
+    # Store fitting status codes.
     if (!fit_result$success) {
         if (model == 'H0') {
             out["status_code"] <- 2
@@ -403,7 +403,7 @@ NULL
 #' @importFrom TMB MakeADFun FreeADFun
 #' @importFrom stats nlminb
 .hb.mle.tmbfit <- function(data, nlminb_control, gradient_tolerance, dll = "hespresso") {
-    # generate objective function
+    # Generate the objective function.
     obj <- tryCatch(
         TMB::MakeADFun(data = data$data, parameters = data$params, DLL = dll, silent = TRUE),
         error = function(e) e
@@ -422,7 +422,7 @@ NULL
 
     on.exit(try(TMB::FreeADFun(obj), silent = TRUE), add = TRUE)
 
-    # fitting
+    # Fit the model.
     fit <- tryCatch(
         stats::nlminb(start = obj$par,  objective = obj$fn, gradient = obj$gr, control = nlminb_control),
         error = function(e) e
@@ -502,7 +502,7 @@ NULL
 
 
 
-# Compute homeolog expression ratio differences from obsrved counts.
+# Compute homeolog expression ratio differences from observed counts.
 #
 #' @importFrom utils combn
 #' @importFrom stats setNames
@@ -513,7 +513,7 @@ NULL
     theta1 <- pmax(theta1, eps)
     theta1 <- theta1 / rowSums(theta1)
 
-    # ratio differences
+    # Ratio differences.
     d <- numeric()
     d_names <- character()
     for (s in seq_len(inputs$N_SUBGENOMES)) {
@@ -525,7 +525,7 @@ NULL
         }
     }
 
-    # ratio foldchanges
+    # Ratio fold changes.
     log_ratio_shift <- numeric()
     ratio_of_ratios <- numeric()
     lr_names <- character()
@@ -608,7 +608,7 @@ NULL
         return(out)
     }
 
-    # calculate ratio differences
+    # Calculate ratio differences.
     r_effects <- .hb.mle.calc_effects(fit_h1$theta, inputs)
     out[names(r_effects)] <- r_effects
 
@@ -640,12 +640,11 @@ NULL
 #' HOBIT Using MLE
 #'
 #' Tests whether homeolog expression ratios differ among experimental
-#' conditions by fitting null and alternative negative-binomial models
-#' using maximum likelihood estimation.
+#' conditions by fitting null and alternative negative-binomial models with
+#' maximum likelihood estimation.
 #'
-#' This function independently fits a null model and an alternative model to
-#' test whether homeolog expression ratios differ among experimental
-#' conditions.
+#' This function fits null and alternative models independently to test whether
+#' homeolog expression ratios differ among experimental conditions.
 #'
 #' Under the null hypothesis, all conditions share a single homeolog expression
 #' ratio vector:
@@ -657,7 +656,7 @@ NULL
 #'
 #' \deqn{H_1: \boldsymbol{\theta}_c \text{ may differ among conditions}.}
 #'
-#' Total gene expression remains condition specific under both hypotheses.
+#' Total gene expression remains condition-specific under both hypotheses.
 #' The null and alternative models are optimized independently, and the
 #' likelihood ratio statistic is calculated as
 #'
@@ -665,7 +664,7 @@ NULL
 #'
 #' The function supports two or more subgenomes. For three or more subgenomes,
 #' including the A, B, and D subgenomes of wheat, pairwise effects are reported
-#' as log-ratio changes (`LR`) and their exponentiated ratio-of-ratios (`RR`).
+#' as log-ratio changes (`LR`) and their exponentiated ratio of ratios (`RR`).
 #' These quantities represent effect sizes rather than separate pairwise
 #' hypothesis tests.
 #'
@@ -694,12 +693,16 @@ NULL
 #'   likelihood ratio statistic caused by numerical error. Values between
 #'   `-lrt_tolerance` and zero are set to zero. More negative values are treated
 #'   as optimization failures.
+#' @param .debug Logical. If `TRUE`, return all statistical test results for
+#'   detailed analysis or debugging. If `FALSE`, return only the main
+#'   statistical test results.
 #' @param ... Named arguments added to the `control` argument of
 #'   \code{\link[stats]{nlminb}}, such as `iter.max`, `eval.max`, `rel.tol`,
 #'   and `x.tol`.
 #'
-#' @return A data frame with one row per homeolog tuple. Principal columns
-#'   include:
+#' @return By default, a data frame with one row per homeolog tuple containing
+#'   `gene`, `pvalue`, `qvalue`, `Dmax`, `LRmax`, `RRmax`, and `theta0__*`
+#'   columns. When `.debug = TRUE`, the data frame additionally contains:
 #'
 #'   \itemize{
 #'     \item `pvalue`: p-value from the likelihood ratio test;
@@ -707,7 +710,7 @@ NULL
 #'     \item `lrt`: likelihood ratio statistic;
 #'     \item `df`: asymptotic degrees of freedom;
 #'     \item `theta0__*`: null model maximum-likelihood ratio estimates;
-#'     \item `theta1__*__*`: condition specific alternative model estimates;
+#'     \item `theta1__*__*`: condition-specific alternative model estimates;
 #'     \item `D__*`: differences in individual subgenome proportions;
 #'     \item `LR__*`: changes in pairwise subgenome log-ratios;
 #'     \item `RR__*`: exponentiated pairwise log-ratio changes;
@@ -746,24 +749,25 @@ hobit_mle <- function(x,
                       no_replicate = FALSE,
                       eps = 1e-3,
                       n_threads = 1L,
-                      gradient_tolerance = 1e-4,
+                      gradient_tolerance = 1e-2,
                       lrt_tolerance = 1e-6,
+                      .debug = FALSE,
                       ...) {
-    # params validation
+    # Validate parameters.
     n_threads <- .as_positive_int(n_threads, 'n_threads')
     eps <- .as_positive_float(eps, "eps")
     gradient_tolerance <- .as_positive_float(gradient_tolerance, 'gradient_tolerance')
     lrt_tolerance <- .as_nonnegative_float(lrt_tolerance, 'lrt_tolerance')
     nlminb_control <- .hb.mle.init_nlminb_control(list(...))
 
-    # format data
+    # Format data.
     data <- .hb.mle.format_data(x, eps, no_replicate)
 
-    # output name
+    # Set output names.
     stats_names <- names(.hb.mle.init_stats_tmpl(data[[1L]]))
     fun_value <- stats::setNames(numeric(length(stats_names)), stats_names)
 
-    # run multiple processes for HOBIT estimation
+    # Run HOBIT estimation across multiple processes.
     future_plan_bkup <- future::plan()
     on.exit(future::plan(future_plan_bkup), add = TRUE)
 
@@ -778,6 +782,7 @@ hobit_mle <- function(x,
         future.apply::future_vapply(
             seq_along(data),
             function(i) {
+                on.exit(pb(message = 'HOBIT (MEL)'), add = TRUE)
                 fit_output <- tryCatch(
                     .hb.mle.fit_gene(data[[i]], nlminb_control, gradient_tolerance, lrt_tolerance),
                     error = function(e) {
@@ -790,14 +795,15 @@ hobit_mle <- function(x,
                         fit_errout["status_code"] <- 6
                         fit_errout
                     })
-                pb()
                 fit_output
             },
             FUN.VALUE = fun_value,
             future.seed = FALSE,
             future.packages = c('hespresso', 'TMB')
         )
-    })
+        },
+        handlers = progressr::handler_progress(format = ":message :percent [:bar] :current/:total :eta")
+    )
 
     stats <- data.frame(t(stats), check.names = FALSE)
     stats$qvalue <- stats::p.adjust(stats$pvalue, method = "BH")
@@ -814,7 +820,7 @@ hobit_mle <- function(x,
     stats$converged_H1 <- as.logical(stats$converged_H1)
     stats$lrt_negative <- as.logical(stats$lrt_negative)
 
-    data.frame(gene = x@gene_names,
+    output <- data.frame(gene = x@gene_names,
         pvalue = stats$pvalue, qvalue = stats$qvalue,
         lrt = stats$lrt, df = stats$df,
         status = status,
@@ -834,4 +840,6 @@ hobit_mle <- function(x,
         logLik_H1 = stats$logLik_H1,
         check.names = FALSE
     )
+
+    .hobit.select_output(output, .debug)
 }
