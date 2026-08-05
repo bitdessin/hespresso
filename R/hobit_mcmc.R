@@ -20,6 +20,7 @@
 #' @param x An \linkS4class{ExpMX} object containing homeolog RNA-seq count
 #'   data. The required count representation may depend on `mode`.
 #' @param mode Character. MCMC fitting mode. Either `"fast"` or `"strict"`.
+#'   The default is `"strict"`.
 #' @param use_Dirichlet Logical. Whether to use data-derived Dirichlet priors
 #'   for homeolog expression ratios.
 #' @param no_replicate Logical. Whether to use the dispersion-estimation
@@ -86,11 +87,11 @@
 #' x <- sim_homeolog_counts(10)
 #' x_output <- hobit_mcmc(x)
 #'
-#' # fast mode
+#' # strict mode (default)
 #' x_output <- hobit_mcmc(x, chains = 2, iter_warmup = 100, iter_sampling = 100)
 #'
-#' # strict mode
-#' x_output <- hobit_mcmc(x, mode = "strict", chains = 2, iter_warmup = 100, iter_sampling = 100)
+#' # fast mode
+#' x_output <- hobit_mcmc(x, mode = "fast", chains = 2, iter_warmup = 100, iter_sampling = 100)
 #'
 #' # parallel processing
 #' x_output <- hobit_mcmc(x, n_threads = 1, parallel_chains = 8,
@@ -106,7 +107,7 @@
 #' @importFrom cmdstanr cmdstan_model
 #' @export
 hobit_mcmc <- function(x,
-    mode = c("fast", "strict"),
+    mode = c("strict", "fast"),
     use_Dirichlet = FALSE,
     no_replicate = FALSE,
     eps = 1e-3,

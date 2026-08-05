@@ -32,7 +32,7 @@
 #'
 #' @param x An \linkS4class{ExpMX} object.
 #' @param method Character string specifying the inference method. Available
-#'   values are `"mcmc"` and `"mle"`. The default is `"mcmc"`.
+#'   values are `"mcmc"` and `"mle"`. The default is `"mle"`.
 #' @param .debug Logical. If `TRUE`, return all statistical test results for
 #'   detailed analysis or debugging. If `FALSE`, return only the main
 #'   statistical test results.
@@ -56,13 +56,13 @@
 #' @examples
 #' x <- sim_homeolog_counts(n_genes = 10)
 #'
-#' x_output_mcmc_1 <- hobit(x)
-#' # x_output_mcmc_2 <- hobit(x, method = "mcmc")
+#' x_output_mle_1 <- hobit(x)
+#' # x_output_mle_2 <- hobit(x, method = "mle")
 #'
-#' x_output_mle <- hobit(x, method = "mle")
+#' x_output_mcmc <- hobit(x, method = "mcmc")
 #'
 #' @export
-hobit <- function(x, method = c("mcmc", "mle"), .debug = FALSE, ...) {
+hobit <- function(x, method = c("mle", "mcmc"), .debug = FALSE, ...) {
     method <- match.arg(method)
     switch(
         method,
