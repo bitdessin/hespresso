@@ -3,28 +3,6 @@
 NULL
 
 
-.as_positive_int <- function(x, arg_name) {
-    if (!is.numeric(x) || length(x) != 1L || !is.finite(x) || x < 1 || x != as.integer(x)) {
-        stop(paste0("The `", arg_name, "` must be one positive integer."), call. = FALSE)
-    }
-    as.integer(x)
-}
-
-
-.as_positive_float <- function(x, arg_name) {
-    if (!is.numeric(x) || length(x) != 1L || !is.finite(x) || x <= 0) {
-        stop(paste0("`", arg_name, "` must be one finite positive number."), call. = FALSE)
-    }
-    as.numeric(x)
-}
-
-.as_nonnegative_float <- function(x, arg_name) {
-    if (!is.numeric(x) || length(x) != 1L || !is.finite(x) || x < 0) {
-        stop(paste0("`", arg_name, "` must be one non-negative number."), call. = FALSE)
-    }
-    as.numeric(x)
-}
-
 .parse_group_names <- function(group) {
     if (!is.factor(group)) {
         group <- factor(group, levels = unique(group))
@@ -660,7 +638,7 @@ NULL
 #' The null and alternative models are optimized independently, and the
 #' likelihood ratio statistic is calculated as
 #'
-#' \deqn{2\left{ \ell(\widehat{\boldsymbol{\eta}}_1) - \ell(\widehat{\boldsymbol{\eta}}_0) \right}.}
+#' \deqn{2\left\{ \ell(\widehat{\boldsymbol{\eta}}_1) - \ell(\widehat{\boldsymbol{\eta}}_0) \right\}.}
 #'
 #' The function supports two or more subgenomes. For three or more subgenomes,
 #' including the A, B, and D subgenomes of wheat, pairwise effects are reported

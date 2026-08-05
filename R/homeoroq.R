@@ -29,6 +29,7 @@
 
 
 # Calculate Summary Statistics from Counts Data of Group 2
+#' @importFrom stats var
 .hq.data.OD <- function(d) {
     counts <- d$DATA[, d$OD] + d$DATA[, d$AD]
     logmean <- rowMeans(log(counts))
@@ -43,6 +44,7 @@
 
 
 # Calculate Summary Statistics from Counts Data of Group 2
+#' @importFrom stats var
 .hq.data.OC <- function(d) {
     counts <- d$DATA[, d$OC] + d$DATA[, d$AC]
     logmean <- rowMeans(log(counts))
@@ -57,6 +59,7 @@
 
 
 # Calculate Summary Statistics from Counts Data of All Groups
+#' @importFrom stats var
 .hq.data.OR <- function(d) {
     ORG <- c(d$OC, d$OD)
     totalCounts <- d$DATA[, ORG] + d$DATA[, c(d$AC, d$AD)]

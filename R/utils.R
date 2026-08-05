@@ -65,8 +65,11 @@
     
     hexp_ratios <- matrix(NA, ncol = n_subgenomes, nrow = nrow(gene_exp))
     for (i in seq_len(n_subgenomes)) {
-        hexp_ratios[, i] <- rowMeans(as.matrix(x[[i]] / gene_exp), na.rm = TRUE)
+        ratios <- as.matrix(x[[i]] / gene_exp)
+        ratios[!is.finite(gene_exp) | gene_exp == 0] <- NA_real_
+        hexp_ratios[, i] <- rowMeans(ratios, na.rm = TRUE)
     }
+    hexp_ratios[is.nan(hexp_ratios)] <- NA_real_
 
     colnames(hexp_ratios) <- names(x)
     if (!is.null(rownames(x[[1]])))
@@ -99,14 +102,16 @@
     if ((nrow(exp1) != nrow(exp2)) || (ncol(exp1) != ncol(exp2)))
         stop('The dimensions of the two provided expression matrices',
              'do not match.')
-    
-    ormax <- matrix(NA, ncol = ncol(exp1), nrow = nrow(exp1))
-    or_12 <- (exp1 / (1 - exp1)) / (exp2 / (1 - exp2))
-    or_21 <- (exp2 / (1 - exp2)) / (exp1 / (1 - exp1))
-    for (i in seq_len(ncol(exp1))) {
-        ormax[, i] <- apply(cbind(or_12[, i], or_21[, i]), 1, max, na.rm = TRUE)
+    if (any(!is.finite(exp1)) || any(!is.finite(exp2)) ||
+        any(exp1 < 0 | exp1 > 1) || any(exp2 < 0 | exp2 > 1)) {
+        stop('The provided expression ratios must be finite values between 0 and 1.', call. = FALSE)
     }
-    ormax
+
+    log_odds1 <- log(exp1) - log1p(-exp1)
+    log_odds2 <- log(exp2) - log1p(-exp2)
+    log_or <- abs(log_odds1 - log_odds2)
+    log_or[is.nan(log_or)] <- 0
+    exp(log_or)
 }
 
 
@@ -131,3 +136,44 @@
     boolvec
 }
 
+
+.as_positive_int <- function(x, arg_name, min_threshold = NULL) {
+    if (!is.numeric(x) || length(x) != 1L || !is.finite(x) || x < 1 ||
+        x > .Machine$integer.max || x != floor(x)) {
+        stop(paste0("The `", arg_name, "` must be one positive integer."), call. = FALSE)
+    }
+    if (!is.null(min_threshold)) {
+        if (!is.numeric(min_threshold) || length(min_threshold) != 1L ||
+            !is.finite(min_threshold) || min_threshold < 1 ||
+            min_threshold > .Machine$integer.max || min_threshold != floor(min_threshold)) {
+            stop("`min_threshold` must be one positive integer.", call. = FALSE)
+        }
+        if (x < min_threshold) {
+            stop(paste0("The `", arg_name, "` must be at least ", min_threshold, "."), call. = FALSE)
+        }
+    }
+
+    as.integer(x)
+}
+
+
+.as_positive_float <- function(x, arg_name) {
+    if (!is.numeric(x) || length(x) != 1L || !is.finite(x) || x <= 0) {
+        stop(paste0("`", arg_name, "` must be one finite positive number."), call. = FALSE)
+    }
+    as.numeric(x)
+}
+
+.as_nonnegative_float <- function(x, arg_name) {
+    if (!is.numeric(x) || length(x) != 1L || !is.finite(x) || x < 0) {
+        stop(paste0("`", arg_name, "` must be one non-negative number."), call. = FALSE)
+    }
+    as.numeric(x)
+}
+
+.as_prob <- function(x, arg_name) {
+    if (!is.numeric(x) || length(x) != 1L || !is.finite(x) || x < 0 || x > 1) {
+        stop(paste0("`", arg_name, "` must be one finite number between 0 and 1."), call. = FALSE)
+    }
+    as.numeric(x)
+}
