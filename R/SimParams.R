@@ -2,7 +2,7 @@
 #'
 #' An S4 class that stores the design, generating parameters, and ground truth
 #' for RNA-seq count data simulated by [sim_homeolog_counts()]. The object is
-#' stored in the `meta` slot of the returned `ExpMX` object.
+#' stored in the `meta` slot of the returned `SeqCountData` object.
 #'
 #' @slot n_subgenomes Number of simulated subgenomes.
 #' @slot n_genes Number of simulated homeolog tuples.
@@ -14,16 +14,16 @@
 #' @slot params Data frame containing the sampled baseline parameters for the
 #'   simulated homeolog tuples.
 #' @slot nls Fitted mean-dispersion trend model used to generate dispersions.
-#' @slot mu Named list of condition-specific expected homeolog-expression mean
-#'   matrices before library-size offsets are applied.
+#' @slot mu Named list of condition-specific expected mean-expression matrices
+#'   for homeologs before library-size offsets are applied.
 #' @slot her Named list of condition-specific true homeolog expression-ratio
 #'   matrices.
 #' @slot total_mu Named list of condition-specific total-expression means.
 #' @slot dispersion Named list of per-gene negative-binomial dispersions, one
 #'   vector for each subgenome.
 #' @slot log_offset Centered log library-size offsets, one per simulated sample.
-#' @slot is_shift Logical vector indicating exact homeolog-expression-ratio
-#'   shift genes.
+#' @slot is_shift Logical vector indicating genes with exact
+#'   homeolog-expression-ratio shifts.
 #' @slot is_deg Logical vector indicating genes with an independent
 #'   total-expression change.
 #' @slot shift_group Character vector giving the condition receiving each

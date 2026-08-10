@@ -1,30 +1,30 @@
 # Load the empirical matrix used to construct the mean-dispersion population.
-.init_seed_expmx <- function(expmx, n_subgenomes) {
+.init_seed_counts <- function(expmx, n_subgenomes) {
     if (is.null(expmx)) {
         seed_file <- if (n_subgenomes == 2L) {
             "seed_matrix.C_flexuosa.tsv.gz"
         } else if (n_subgenomes == 3L) {
             "seed_matrix.T_aestivum.tsv.gz"
         } else {
-            stop("For more than three subgenomes, provide `seed_expmx` explicitly.", call. = FALSE)
+            stop("For more than three subgenomes, provide `seed_counts` explicitly.", call. = FALSE)
         }
 
         expmx <- utils::read.table(system.file("extdata", seed_file, package = "hespresso"), check.names = FALSE)
     } else if (!is.matrix(expmx) && !is.data.frame(expmx)) {
-        stop("`seed_expmx` must be `NULL`, a matrix, or a data.frame.", call. = FALSE)
+        stop("`seed_counts` must be `NULL`, a matrix, or a data.frame.", call. = FALSE)
     }
 
     expmx <- as.matrix(expmx)
     storage.mode(expmx) <- "double"
 
     if (nrow(expmx) < 3L || ncol(expmx) < 2L) {
-        stop("`seed_expmx` must contain at least three rows and two samples.", call. = FALSE)
+        stop("`seed_counts` must contain at least three rows and two samples.", call. = FALSE)
     }
     if (anyNA(expmx) || any(!is.finite(expmx)) || any(expmx < 0)) {
-        stop("`seed_expmx` must contain finite, non-negative values.", call. = FALSE)
+        stop("`seed_counts` must contain finite, non-negative values.", call. = FALSE)
     }
     if (any(colSums(expmx) <= 0)) {
-        stop("Every column of `seed_expmx` must have a positive sum.", call. = FALSE)
+        stop("Every column of `seed_counts` must have a positive sum.", call. = FALSE)
     }
 
     expmx
@@ -210,6 +210,8 @@
     names(her) <- group_names
 
     shift_strength <- numeric(n_genes)
+    structural_zero <- rep(FALSE, n_genes)
+    structural_zero_group <- rep(NA_character_, n_genes)
 
     shifted_ids <- which(truth$is_shift)
     for (i in shifted_ids) {
@@ -237,7 +239,31 @@
         her[[truth$shift_group[i]]][i, ] <- shifted_theta
     }
 
-    list(her = her, shift_strength = shift_strength)
+    if (settings$prop_zero > 0) {
+        for (g in seq_along(group_names)) {
+            boundary_ids <- which(stats::rbinom(
+                n_genes, size = 1L, prob = settings$prop_zero
+            ) == 1L)
+            for (i in boundary_ids) {
+                absent <- sample.int(n_subgenomes, size = 1L)
+                theta <- her[[g]][i, ]
+                theta[absent] <- 0
+                theta <- theta / sum(theta)
+                her[[g]][i, ] <- theta
+                structural_zero[i] <- TRUE
+                if (is.na(structural_zero_group[i])) {
+                    structural_zero_group[i] <- group_names[g]
+                }
+            }
+        }
+    }
+
+    list(
+        her = her,
+        shift_strength = shift_strength,
+        structural_zero = structural_zero,
+        structural_zero_group = structural_zero_group
+    )
 }
 
 
@@ -375,7 +401,7 @@
 }
 
 
-#' Generate Artificial RNA-seq Read Counts Simulating Homeolog Expression
+#' Generate Artificial RNA-seq Read Counts for Homeolog-Expression Simulation
 #'
 #' Generates model-matched raw integer RNA-seq counts for evaluating HOBIT.
 #' The simulator separates total expression from homeolog expression ratios,
@@ -384,24 +410,27 @@
 #' library-size offsets, and draws each observation once from a negative-
 #' binomial distribution.
 #'
-#' The returned `ExpMX` object contains the simulated count matrices and an
+#' The returned `SeqCountData` object contains the simulated count matrices and an
 #' associated `SimParams` object in `x@meta`. The latter records the generating
 #' parameters, exact H0/H1 labels, and true effect-size summaries.
 #'
 #' @param n_genes Integer. Number of homeolog tuples to simulate.
-#' @param n_replicates Integer vector. Number of replicates per condition.
-#' @param n_subgenomes Integer. Number of subgenomes.
+#' @param n_replicates Integer vector. Number of replicates for each condition.
+#' @param n_subgenomes Integer. Number of subgenomes to simulate.
 #' @param prop_shift Numeric between 0 and 1. Proportion of genes assigned to the
 #'   exact homeolog-expression-ratio shift alternative. The default is 0.10.
 #' @param prop_deg Numeric between 0 and 1. Proportion of genes assigned a
 #'   total-expression change independently of homeolog-expression-ratio status.
 #'   The default is 0.10.
+#' @param prop_zero Numeric between 0 and 1. Proportion of genes
+#'   assigned a condition-by-subgenome structural zero, producing homeolog
+#'   expression ratios near 0 or 1.
 #' @param group_names Character vector of condition names.
 #' @param subgenome_names Character vector of subgenome names.
-#' @param seed_expmx `NULL`, matrix, or data.frame used to construct the
+#' @param seed_counts `NULL`, matrix, or data.frame used to construct the
 #'   empirical mean-dispersion population. If `NULL`, bundled reference data
 #'   are used for two or three subgenomes.
-#' @return An `ExpMX` object containing raw integer counts. Its `meta` slot is a
+#' @return An `SeqCountData` object containing raw integer counts. Its `meta` slot is a
 #'   `SimParams` object containing the exact homeolog-expression-ratio labels
 #'   (`is_shift`), independent total-expression labels (`is_deg`), true means,
 #'   ratios, dispersions, library-size offsets, and effect-size summaries.
@@ -427,9 +456,10 @@ sim_homeolog_counts <- function(n_genes = 10000,
                                 n_subgenomes = 2,
                                 prop_shift = 0.10,
                                 prop_deg = 0.10,
+                                prop_zero = 0.05,
                                 group_names = NULL,
                                 subgenome_names = NULL,
-                                seed_expmx = NULL) {
+                                seed_counts = NULL) {
     # validate the design before deriving labels or sampling parameters.
     n_genes <- .as_positive_int(n_genes, "n_genes")
     n_replicates <- vapply(seq_along(n_replicates),
@@ -438,6 +468,7 @@ sim_homeolog_counts <- function(n_genes = 10000,
     n_subgenomes <- .as_positive_int(n_subgenomes, "n_subgenomes", min_threshold = 2L)
     prop_shift <- .as_prob(prop_shift, "prop_shift")
     prop_deg <- .as_prob(prop_deg, "prop_deg")
+    prop_zero <- .as_prob(prop_zero, "prop_zero")
 
     # init labels
     if (is.null(group_names)) {
@@ -452,8 +483,8 @@ sim_homeolog_counts <- function(n_genes = 10000,
     }
     gene_names <- paste0("gene_", seq_len(n_genes))
 
-    seed_expmx <- .init_seed_expmx(seed_expmx, n_subgenomes)
-    seed_params <- .get_seed_params(n_genes, seed_expmx)
+    seed_counts <- .init_seed_counts(seed_counts, n_subgenomes)
+    seed_params <- .get_seed_params(n_genes, seed_counts)
     rownames(seed_params$sample) <- gene_names
 
     dispersion_model <- .fit_mean_dispersion(seed_params$population)
@@ -471,7 +502,7 @@ sim_homeolog_counts <- function(n_genes = 10000,
         offset_sd = 0.35,
         theta_floor = 1e-8,
         dispersion_shared_across_conditions = TRUE,
-        structural_zero_prop = 0,
+        prop_zero = prop_zero,
         n_subgenomes = n_subgenomes
     )
     truth <- .sample_truth(n_genes, group_names, settings)
@@ -491,6 +522,9 @@ sim_homeolog_counts <- function(n_genes = 10000,
         settings = settings
     )
     her <- her_result$her
+    boundary_ids <- her_result$structural_zero & !truth$is_shift
+    truth$is_shift[boundary_ids] <- TRUE
+    truth$shift_group[boundary_ids] <- her_result$structural_zero_group[boundary_ids]
 
     total_mu <- .generate_total_mu(
         baseline_total_mean = seed_params$sample$mean,
@@ -546,7 +580,7 @@ sim_homeolog_counts <- function(n_genes = 10000,
     })
 
     methods::new(
-        "ExpMX",
+        "SeqCountData",
         data = counts,
         gene_names = gene_names,
         exp_design = data.frame(
@@ -588,14 +622,16 @@ sim_homeolog_counts <- function(n_genes = 10000,
 }
 
 
-#' Define Ground-truth Homeolog-Expression-Ratio Shifts
+#' Define Ground-Truth Homeolog-Expression-Ratio Shifts
 #'
 #' Returns the exact simulated homeolog-expression-ratio shift labels when
-#' `Dmax` and `ORmax` are both `NULL`. When either threshold is supplied, the
-#' function calculates ratio differences from the true homeolog expression
-#' ratios and filters genes using the supplied threshold or thresholds.
+#' `Dmax` and `ORmax` are both `NULL`. If `base` is specified, the global truth
+#' labels are restricted to genes whose selected subgenome's ratio changes
+#' between conditions. When either threshold is supplied, the function
+#' calculates ratio differences from the true homeolog expression ratios and
+#' filters genes using the supplied threshold or thresholds.
 #'
-#' @param x An `ExpMX` object generated by [sim_homeolog_counts()].
+#' @param x An `SeqCountData` object generated by [sim_homeolog_counts()].
 #' @param base Integer subgenome index used for thresholding. If `0`, the
 #'   maximum value across all subgenomes is used.
 #' @param groups Optional character vector of length two specifying the
@@ -607,9 +643,11 @@ sim_homeolog_counts <- function(n_genes = 10000,
 #' @param operator Character string specifying how `Dmax` and `ORmax` criteria
 #'   are combined when both are supplied: either `"OR"` or `"AND"`.
 #'
-#' @return A named logical vector. If both thresholds are `NULL`, it is exactly
-#'   `x@meta@is_shift`. Otherwise, it indicates genes passing the supplied
-#'   threshold or thresholds.
+#' @return A named logical vector. If both thresholds are `NULL` and `base` is
+#'   `0`, it is exactly `x@meta@is_shift`. For a specified base, it contains
+#'   the global truth labels restricted to genes whose selected subgenome's
+#'   ratio changes between conditions. Otherwise, it indicates genes passing
+#'   the supplied threshold or thresholds.
 #'
 #' @examples
 #' x <- sim_homeolog_counts(n_genes = 100)
@@ -626,7 +664,27 @@ def_sigShift <- function(x,
     base = 0, groups = NULL,
     Dmax = NULL, ORmax = NULL, operator = c('OR', 'AND')) {
     if (is.null(Dmax) && is.null(ORmax)) {
-        return(x@meta@is_shift)
+        if (base == 0) {
+            return(x@meta@is_shift)
+        }
+
+        her <- if (is.null(groups)) {
+            x@meta@her
+        } else {
+            x@meta@her[groups]
+        }
+        base_shift <- matrix(FALSE, nrow = nrow(her[[1L]]), ncol = 1L)
+        if (length(her) > 1L) {
+            for (g1 in seq_len(length(her) - 1L)) {
+                for (g2 in (g1 + 1L):length(her)) {
+                    base_shift[, 1L] <- base_shift[, 1L] |
+                        (her[[g1]][, base] != her[[g2]][, base])
+                }
+            }
+        }
+        gt <- x@meta@is_shift & base_shift[, 1L]
+        names(gt) <- x@gene_names
+        return(gt)
     }
 
     operator <- match.arg(operator)
