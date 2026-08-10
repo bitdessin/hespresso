@@ -1,0 +1,117 @@
+name: Build
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify tag is based on main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::The release tag must point to a commit on main."
+            exit 1
+          fi
+
+      - name: Setup R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: release
+          use-public-rspm: true
+          extra-repositories: |
+            https://stan-dev.r-universe.dev
+
+      - name: Setup pandoc
+        uses: r-lib/actions/setup-pandoc@v2
+
+      - name: Install R dependencies
+        uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          cache-version: 2
+          extra-packages: |
+            any::bookdown
+
+      - name: Restore CmdStan cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cmdstan
+          key: ${{ runner.os }}-cmdstan-cache-v1
+
+      - name: Install CmdStan
+        shell: Rscript {0}
+        run: |
+          if (is.null(cmdstanr::cmdstan_version(error_on_NA = FALSE))) {
+            cmdstanr::install_cmdstan()
+          }
+          cmdstanr::check_cmdstan_toolchain()
+          print(cmdstanr::cmdstan_version())
+
+      - name: Read package metadata
+        shell: Rscript {0}
+        run: |
+          desc <- read.dcf("DESCRIPTION")
+
+          pkg_name <- desc[1, "Package"]
+          pkg_version <- desc[1, "Version"]
+          pkg_file <- sprintf("%s_%s.tar.gz", pkg_name, pkg_version)
+
+          env <- Sys.getenv("GITHUB_ENV")
+
+          cat(sprintf("PKG_NAME=%s\n", pkg_name), file = env, append = TRUE)
+          cat(sprintf("PKG_VERSION=%s\n", pkg_version), file = env, append = TRUE)
+          cat(sprintf("PKG_FILE=%s\n", pkg_file), file = env, append = TRUE)
+
+      - name: Validate release version
+        if: github.ref_type == 'tag'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+
+          if [[ "$PKG_VERSION" != "$TAG_VERSION" ]]; then
+            echo "::error::DESCRIPTION version ($PKG_VERSION) does not match tag ($TAG_VERSION)"
+            exit 1
+          fi
+
+      - name: Build package
+        shell: bash
+        run: |
+          set -euo pipefail
+          R CMD build .
+
+      - name: Check package
+        shell: bash
+        run: |
+          set -euo pipefail
+          R CMD check "$PKG_FILE" --no-manual
+
+      - name: Install package
+        shell: bash
+        run: |
+          set -euo pipefail
+          R CMD INSTALL "$PKG_FILE"
+
+      - name: Create release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ env.PKG_NAME }} ${{ env.PKG_VERSION }}
+          files: ${{ env.PKG_FILE }}
+          fail_on_unmatched_files: true
