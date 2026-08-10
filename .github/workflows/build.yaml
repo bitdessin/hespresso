@@ -4,11 +4,6 @@ on:
   push:
     tags:
       - "v*.*.*"
-  workflow_dispatch:
-
-concurrency:
-  group: pages
-  cancel-in-progress: false
 
 jobs:
   build:
@@ -20,6 +15,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify tag is based on main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::The release tag must point to a commit on main."
+            exit 1
+          fi
 
       - name: Setup R
         uses: r-lib/actions/setup-r@v2
@@ -108,28 +115,3 @@ jobs:
           name: ${{ env.PKG_NAME }} ${{ env.PKG_VERSION }}
           files: ${{ env.PKG_FILE }}
           fail_on_unmatched_files: true
-
-      - name: Build documentation
-        working-directory: docs
-        shell: Rscript {0}
-        run: |
-          bookdown::render_book("index.Rmd", "bookdown::gitbook")
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: docs/_html
-
-  deploy-pages:
-    needs: build
-
-    runs-on: ubuntu-latest
-
-    permissions:
-      pages: write
-      id-token: write
-
-    steps:
-      - name: Deploy Pages
-        id: deployment
-        uses: actions/deploy-pages@v4

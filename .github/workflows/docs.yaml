@@ -1,0 +1,96 @@
+name: Documentation
+
+on:
+  push:
+    branches:
+      - devel
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build-docs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch documentation branches
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main devel
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            git fetch origin "refs/tags/$GITHUB_REF_NAME:refs/tags/$GITHUB_REF_NAME"
+            release_ref="$GITHUB_REF_NAME"
+          else
+            release_ref="origin/main"
+          fi
+          git worktree add --detach "$RUNNER_TEMP/hespresso-main" "$release_ref"
+          git worktree add --detach "$RUNNER_TEMP/hespresso-devel" origin/devel
+
+      - name: Setup R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: release
+          use-public-rspm: true
+          extra-repositories: |
+            https://stan-dev.r-universe.dev
+
+      - name: Setup pandoc
+        uses: r-lib/actions/setup-pandoc@v2
+
+      - name: Install R dependencies
+        uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          cache-version: 2
+          extra-packages: |
+            any::bookdown
+
+      - name: Build release documentation
+        shell: bash
+        run: |
+          set -euo pipefail
+          R CMD INSTALL "$RUNNER_TEMP/hespresso-main"
+          Rscript -e 'setwd(commandArgs(trailingOnly = TRUE)[1]); bookdown::render_book("index.Rmd", "bookdown::gitbook")' \
+            "$RUNNER_TEMP/hespresso-main/docs"
+          mkdir -p "$GITHUB_WORKSPACE/_site/release"
+          cp -R "$RUNNER_TEMP/hespresso-main/docs/_html/." \
+            "$GITHUB_WORKSPACE/_site/release/"
+
+      - name: Build development documentation
+        shell: bash
+        run: |
+          set -euo pipefail
+          R CMD INSTALL "$RUNNER_TEMP/hespresso-devel"
+          Rscript -e 'setwd(commandArgs(trailingOnly = TRUE)[1]); bookdown::render_book("index.Rmd", "bookdown::gitbook")' \
+            "$RUNNER_TEMP/hespresso-devel/docs"
+          mkdir -p "$GITHUB_WORKSPACE/_site/devel"
+          cp -R "$RUNNER_TEMP/hespresso-devel/docs/_html/." \
+            "$GITHUB_WORKSPACE/_site/devel/"
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy-pages:
+    needs: build-docs
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+
+    steps:
+      - name: Deploy Pages
+        uses: actions/deploy-pages@v4

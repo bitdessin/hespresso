@@ -8,9 +8,8 @@ using RNA-seq read count data.
 Take a sip of _hespresso_, and start your analysis strong!
 
 
-## Documentation
-
-- https://bitdessin.github.io/hespresso/
+- [Documentation (stable version)](https://bitdessin.github.io/hespresso/release/)
+- [Documentation (development version)](https://bitdessin.github.io/hespresso/devel/)
 
 
 ## Citations
