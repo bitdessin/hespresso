@@ -1,8 +1,8 @@
 #' Visualize distribution of homeolog expression ratios
 #' 
-#' Visualizes distribution of homeolog expression ratio using histogram.
+#' Visualizes the distribution of homeolog expression ratios using histograms.
 #'  
-#' @param x An \linkS4class{ExpMX} class object.
+#' @param x An \linkS4class{SeqCountData} object.
 #' @param base Integer or character. An index or name specifying the subgenome
 #'      used to calculate homeolog expression ratios.
 #' @return A list of ggplot histogram objects, one for each group.
@@ -14,6 +14,7 @@
 #' @importFrom ggplot2 ggplot geom_point geom_histogram aes
 #' @export
 plot_HER_distr <- function(x, base = 1) {
+    x <- .norm_counts(x)
     n_subgenomes <- length(x@data)
     
     her_figs <- vector('list', length = length(unique(x@exp_design$group)))
@@ -36,14 +37,12 @@ plot_HER_distr <- function(x, base = 1) {
 }
 
 
-
-
 #' Visualize Homeolog Expression Ratios between Two Groups
 #' 
 #' Creates a scatter plot to visualize homeolog expression ratios between two
 #' groups.
 #'  
-#' @param x An \linkS4class{ExpMX} class object.
+#' @param x An \linkS4class{SeqCountData} object.
 #' @param base Integer or character. An index or name specifying the subgenome
 #'      used for calculating homeolog expression ratios.
 #' @param groups Character vector of length two specifying the group names
@@ -55,7 +54,7 @@ plot_HER_distr <- function(x, base = 1) {
 #' @param alpha Numeric. A decimal number between 0 and 1 specifying the
 #'      transparency level of points in the scatter plot.
 #' 
-#' @return A ggplot scatter chart object.
+#' @return A ggplot scatter-plot object.
 #' 
 #' @examples
 #' x <- sim_homeolog_counts(100)
@@ -67,6 +66,7 @@ plot_HER_distr <- function(x, base = 1) {
 plot_HER <- function(x,
                      base = 1, groups = NULL, label = NULL,
                      size = 3, alpha = 0.8) {
+    x <- .norm_counts(x)
     groups <- .set_default_groups(x@exp_design$group, groups)
     
     hexp_1 <- lapply(x@data, function(y, cl) {y[, cl]},
@@ -120,4 +120,3 @@ plot_HER <- function(x,
         xlab(groups[1]) +
         ylab(groups[2])
 }
-

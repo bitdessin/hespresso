@@ -271,7 +271,6 @@
 #' @importFrom future.apply future_vapply
 #' @importFrom progressr progressor with_progress handlers
 #' @importFrom progress progress_bar
-#' @importFrom cmdstanr cmdstan_model 
 .hobit_mcmc.fast <- function(x,
                   use_Dirichlet = FALSE,
                   no_replicate = FALSE,
@@ -294,6 +293,8 @@
             message('Invalid input. Continuing the program by default.')
         }
     }
+
+    x <- .norm_counts(x)
     
     input_params <- list(...)
     input_params$parallel_chains <- parallel_chains
@@ -302,7 +303,7 @@
     
     stan_code_fpath <- system.file(package = 'hespresso', 'extdata',
                                    paste0('HOBIT.', dist, '.stan'))
-    m <- cmdstan_model(stan_file = stan_code_fpath,
+    m <- cmdstanr::cmdstan_model(stan_file = stan_code_fpath,
                        dir = tempdir(), quiet = TRUE, compile = TRUE)
     
     # Calculate the number of outputs.
