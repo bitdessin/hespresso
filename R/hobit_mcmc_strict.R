@@ -348,7 +348,6 @@
 #' @importFrom future.apply future_vapply
 #' @importFrom progressr progressor with_progress handlers
 #' @importFrom progress progress_bar
-#' @importFrom cmdstanr cmdstan_model
 .hobit_mcmc.strict <- function(x, use_Dirichlet = FALSE, no_replicate = FALSE, eps = 1e-3, dist = 'NB', n_threads = getOption("mc.cores", 1L), parallel_chains = 1L, ...) {
     dist <- match.arg(dist)
     eps <- .as_positive_float(eps, "eps")

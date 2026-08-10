@@ -3,33 +3,24 @@
 #' Detects changes in homeolog expression ratios using an MCMC-based
 #' implementation of HOBIT.
 #'
-#' HOBIT uses a likelihood ratio test (LRT) to compare two hierarchical models:
-#' a full model that allows homeolog expression ratios to vary among conditions
-#' and a reduced model that assumes constant ratios across all conditions.
-#' Two fitting modes are available, depending on how the reduced model is handled:
+#' The `mode` argument selects either the faster approximate workflow or the
+#' strict workflow, which fits the null and alternative models independently.
+#' Detailed methodological background and usage guidance are available at
+#' \url{https://bitdessin.github.io/hespresso/}.
 #'
-#' \itemize{
-#'   \item `"fast"` uses the original approximate workflow, in which the reduced
-#'     model likelihood is constructed from posterior samples of the
-#'     full model. This reduces computational time but may lead to biased
-#'     p-values and q-values.
-#'     This strategy is described and evaluated in Sun et al. (2026).
-#'   \item `"strict"` samples the null and alternative models independently.
-#' }
-#'
-#' @param x An \linkS4class{ExpMX} object containing homeolog RNA-seq count
+#' @param x An \linkS4class{SeqCountData} object containing homeolog RNA-seq count
 #'   data. The required count representation may depend on `mode`.
-#' @param mode Character. MCMC fitting mode. Either `"fast"` or `"strict"`.
-#'   The default is `"strict"`.
-#' @param use_Dirichlet Logical. Whether to use data-derived Dirichlet priors
+#' @param mode Character string specifying the MCMC fitting mode: `"fast"` or
+#'   `"strict"`. The default is `"strict"`.
+#' @param use_Dirichlet Logical. If `TRUE`, use data-derived Dirichlet priors
 #'   for homeolog expression ratios.
-#' @param no_replicate Logical. Whether to use the dispersion-estimation
+#' @param no_replicate Logical. If `TRUE`, use the dispersion-estimation
 #'   procedure intended for data without biological replicates.
 #' @param eps Positive numeric value used as a lower bound for expected
 #'   expression values.
-#' @param dist Character. Distribution used for count modeling. Available
-#'   choices are `"NB"` and `"ZINB"`. Currently, `"strict"` mode supports
-#'   only `"NB"`.
+#' @param dist Character string specifying the distribution used for count
+#'   modeling. Available choices are `"NB"` and `"ZINB"`. Currently, `"strict"`
+#'   mode supports only `"NB"`.
 #' @param n_threads Positive integer specifying the number of parallel R
 #'   workers used across homeolog tuples.
 #' @param parallel_chains Positive integer specifying the number of Stan chains
@@ -104,7 +95,6 @@
 #' @importFrom future.apply future_vapply
 #' @importFrom progressr progressor with_progress handlers
 #' @importFrom progress progress_bar
-#' @importFrom cmdstanr cmdstan_model
 #' @export
 hobit_mcmc <- function(x,
     mode = c("strict", "fast"),
@@ -119,6 +109,14 @@ hobit_mcmc <- function(x,
 ) {
     mode <- match.arg(mode)
     dist <- match.arg(dist)
+
+    if (!requireNamespace("cmdstanr", quietly = TRUE)) {
+        stop(
+            "MCMC methods require the optional package `cmdstanr`. ",
+            "Install `cmdstanr` before calling `hobit_mcmc()`.",
+            call. = FALSE
+        )
+    }
 
     output <- if (mode == "fast") {
         .hobit_mcmc.fast(x = x,

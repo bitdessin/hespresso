@@ -1,7 +1,7 @@
 Package: hespresso
 Title: LRT for Detecting Shifts in Homeolog Expression Ratios
     from Allopolyploid RNA-seq Data
-Version: 1.0.7
+Version: 1.1.0
 Authors@R:
     person(given = "Jianqiang", family = "Sun",
            email = "sun@bitdessin.dev",
@@ -20,7 +20,6 @@ BugReports: https://github.com/bitdessin/hespresso/issues
 Depends:
     R (>= 4.5)
 Imports:
-    cmdstanr,
     edgeR,
     future,
     future.apply,
@@ -34,6 +33,7 @@ Imports:
     TMB,
     utils
 Suggests:
+    cmdstanr,
     gridExtra,
     pROC,
     UpSetR,
