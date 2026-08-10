@@ -71,11 +71,12 @@ NULL
 #
 #' @importFrom edgeR DGEList estimateDisp
 .hb.mle.est_dispersion_from_matrix <- function(x, gdata, nf, no_replicate) {
-    y <- edgeR::DGEList(counts = x, group = gdata$group, lib.size = nf$libsize, norm.factors = nf$nf)
-
     if (no_replicate) {
+        y <- edgeR::DGEList(counts = x, group = rep(1, length(gdata$group)),
+                            lib.size = nf$libsize, norm.factors = nf$nf)
         y <- suppressMessages(edgeR::estimateDisp(y))
     } else {
+        y <- edgeR::DGEList(counts = x, group = gdata$group, lib.size = nf$libsize, norm.factors = nf$nf)
         design <- stats::model.matrix(~ 0 + group, data = data.frame(group = gdata$group))
         y <- suppressMessages(edgeR::estimateDisp(y, design = design, robust = TRUE))
     }
@@ -92,7 +93,7 @@ NULL
 
 
 
-# Estimate tuple-wise and subgenome-wise dispersion from an ExpMX object.
+# Estimate tuple-wise and subgenome-wise dispersion from an SeqCountData object.
 #
 # Tuple-wise dispersion is estimated from counts summed across all subgenomes
 # for each homeolog tuple. In contrast, subgenome-wise dispersion is estimated
@@ -621,40 +622,12 @@ NULL
 #' conditions by fitting null and alternative negative-binomial models with
 #' maximum likelihood estimation.
 #'
-#' This function fits null and alternative models independently to test whether
-#' homeolog expression ratios differ among experimental conditions.
+#' HOBIT MLE fits the null and alternative models independently and compares
+#' them with a likelihood ratio test. Detailed methodological background and
+#' usage guidance are available at
+#' \url{https://bitdessin.github.io/hespresso/}.
 #'
-#' Under the null hypothesis, all conditions share a single homeolog expression
-#' ratio vector:
-#'
-#' \deqn{H_0: \boldsymbol{\theta}_1 = \boldsymbol{\theta}_2 = \cdots = \boldsymbol{\theta}_C.}
-#'
-#' Under the alternative hypothesis, each condition has its own homeolog
-#' expression ratio vector:
-#'
-#' \deqn{H_1: \boldsymbol{\theta}_c \text{ may differ among conditions}.}
-#'
-#' Total gene expression remains condition-specific under both hypotheses.
-#' The null and alternative models are optimized independently, and the
-#' likelihood ratio statistic is calculated as
-#'
-#' \deqn{2\left\{ \ell(\widehat{\boldsymbol{\eta}}_1) - \ell(\widehat{\boldsymbol{\eta}}_0) \right\}.}
-#'
-#' The function supports two or more subgenomes. For three or more subgenomes,
-#' including the A, B, and D subgenomes of wheat, pairwise effects are reported
-#' as log-ratio changes (`LR`) and their exponentiated ratio of ratios (`RR`).
-#' These quantities represent effect sizes rather than separate pairwise
-#' hypothesis tests.
-#'
-#' Negative-binomial dispersion is estimated using
-#' \code{\link[edgeR]{estimateDisp}} and is then treated as fixed during
-#' maximum-likelihood fitting.
-#'
-#' Raw counts are retained during fitting. TMM normalization factors are
-#' calculated from total homeolog expression and included in the model as
-#' sample-specific offsets.
-#'
-#' @param x An \linkS4class{ExpMX} object containing raw integer RNA-seq counts
+#' @param x An \linkS4class{SeqCountData} object containing raw integer RNA-seq counts
 #'   for corresponding homeologs.
 #' @param no_replicate Logical. If `FALSE`, a common tagwise dispersion
 #'   is estimated for each homeolog using all samples and a design matrix

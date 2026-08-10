@@ -16,21 +16,14 @@
 #' Tests whether homeolog expression ratios differ among experimental
 #' conditions in allopolyploid RNA-seq data.
 #'
-#' `hobit()` is the main entry point for HOBIT analysis. It dispatches the
-#' analysis to either the MCMC implementation or the maximum-likelihood
-#' implementation according to `method`.
+#' `hobit()` is the main entry point for HOBIT analysis. It supports maximum
+#' likelihood and MCMC-based inference through the `method` argument, with MLE
+#' as the default.
 #'
-#' Two methods are available:
+#' Detailed methodological background and usage guidance are available at
+#' \url{https://bitdessin.github.io/hespresso/}.
 #'
-#' - `"mcmc"` uses the original Stan-based MCMC implementation evaluated in
-#'   Sun et al. (2026).
-#' - `"mle"` fits the null and alternative models by maximum likelihood,
-#'   and then performs a likelihood ratio test.
-#'
-#' Method-specific arguments supplied through `...` are passed directly to
-#' [hobit_mcmc()] or [hobit_mle()].
-#'
-#' @param x An \linkS4class{ExpMX} object.
+#' @param x An \linkS4class{SeqCountData} object.
 #' @param method Character string specifying the inference method. Available
 #'   values are `"mcmc"` and `"mle"`. The default is `"mle"`.
 #' @param .debug Logical. If `TRUE`, return all statistical test results for
@@ -44,7 +37,7 @@
 #'   `theta0__*` columns. Set `.debug = TRUE` to return all method-specific
 #'   columns.
 #'
-#' @seealso [hobit_mcmc()], [hobit_mle()], \linkS4class{ExpMX}
+#' @seealso [hobit_mcmc()], [hobit_mle()], \linkS4class{SeqCountData}
 #'
 #' @references
 #' Sun J, Sese J, Shimizu KK.

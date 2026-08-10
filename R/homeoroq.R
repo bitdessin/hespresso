@@ -1,4 +1,4 @@
-# Format an ExpMX Class Object to Input HomeoRoq
+# Format an SeqCountData Class Object to Input HomeoRoq
 .hq.data.format <- function(x) {
     c1 <- x@data[[1]]
     c2 <- x@data[[2]]
@@ -260,7 +260,7 @@
 #' HomeoRoq: Detecting Shifts in Homeolog Expression Ratios between Two Groups
 #'
 #' A statistical method for detecting shifts in homeolog expression ratios
-#' among two subgenomes in allopolyploids across two groups.
+#' between two subgenomes in allopolyploids across two groups.
 #' 
 #' HomeoRoq estimates the probability that homeolog expression ratios
 #' remain constant between two groups using RNA-seq read count data for
@@ -272,19 +272,19 @@
 #' The `homeoroq()` function provides a comprehensive interface
 #' for detecting shifts in homeolog expression ratios across conditions.
 #' By default, it performs 10,000 sampling iterations
-#' per MCMC chain (`iter_sampling = 1e4`) across 4 chains (`chians = 4`).
+#' per MCMC chain (`iter_sampling = 1e4`) across four chains (`chains = 4`).
 #' However, for robust and reproducible estimation of statistical significance
 #' (i.e., _p_-values), it is recommended to conduct multiple independent sampling runs,
 #' each with a sufficiently large number of iterations.
 #' To replicate the settings used in the original HomeoRoq implementation
 #' (Akama et al., NAR, 2014), set `chains = 10` and `iter_sampling = 1e4`.
 #'
-#' @param x An \linkS4class{ExpMX} class object containing normalized homeolog
+#' @param x An \linkS4class{SeqCountData} object containing normalized homeolog
 #'      expression data (i.e., RNA-seq read counts).
-#' @param chains Integer. Specifies the number of independent sampling
-#'      iterations used in the statistical test.
-#' @param iter_sampling Integer. Specifies the number of samples to draw per
-#'      iteration for estimating p-values.
+#' @param chains Integer. Specifies the number of independent MCMC chains used
+#'      in the statistical test.
+#' @param iter_sampling Integer. Specifies the number of post-warmup samples
+#'      to draw per chain for estimating p-values.
 #' @param n_threads Integer. Specifies the number of threads to use for parallel
 #'      processing across sampling iterations.
 #'      The default value is taken from the global option `'mc.cores'`,

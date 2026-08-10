@@ -36,8 +36,8 @@
 # Calculate homeolog tuple-wise expression by summing up all homeolog expression
 #' @importFrom methods is
 .calc_gexp <- function(x) {
-    if (!is(x, 'ExpMX'))
-        stop('The input data should be stored as ExpMX class.')
+    if (!is(x, 'SeqCountData'))
+        stop('The input data should be stored as SeqCountData class.')
 
     h_exp <- 0
     for (i in seq_along(x@data)) {
