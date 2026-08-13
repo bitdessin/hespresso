@@ -7,7 +7,7 @@ bibliography: ["references.bib"]
 csl: "springer-basic-author-date.csl"
 ---
 
-# hespresso {-}
+# `r Sys.getenv('BOOK_TITLE', 'hespresso')` {-}
 
 
 `r pkg("hespresso")` blends _homeolog expression_ &#129516; with _espresso_ &#9749;,

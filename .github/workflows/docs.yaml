@@ -72,6 +72,18 @@ jobs:
           cmdstanr::check_cmdstan_toolchain()
           print(cmdstanr::cmdstan_version())
 
+      - name: Read release metadata
+        shell: Rscript {0}
+        run: |
+          desc <- read.dcf(file.path(
+              Sys.getenv("RUNNER_TEMP"), "hespresso-main", "DESCRIPTION"
+          ))
+          pkg_name <- desc[1, "Package"]
+          pkg_version <- desc[1, "Version"]
+          cat(sprintf(
+              "BOOK_TITLE=%s v%s\n", pkg_name, pkg_version
+          ), file = Sys.getenv("GITHUB_ENV"), append = TRUE)
+
       - name: Build release documentation
         shell: bash
         run: |
@@ -87,6 +99,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          export BOOK_TITLE="hespresso [devel]"
           R CMD INSTALL "$RUNNER_TEMP/hespresso-devel"
           Rscript -e 'setwd(commandArgs(trailingOnly = TRUE)[1]); bookdown::render_book("index.Rmd", "bookdown::gitbook")' \
             "$RUNNER_TEMP/hespresso-devel/docs"
