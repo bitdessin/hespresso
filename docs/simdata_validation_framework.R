@@ -34,8 +34,8 @@ create_simdata <- function(data_fpath, seed, n_subgenomes, n_reps, overwrite = T
                                  n_subgenomes = n_subgenomes,
                                  n_replicates = c(n_reps, n_reps),
                                  group_names = c('ctrl', 'test'),
-                                 prop_shift = runif(1, 0.03, 0.10),
-                                 prop_deg = runif(1, 0.05, 0.25))
+                                 p_shift = runif(1, 0.03, 0.10),
+                                 p_deg = runif(1, 0.05, 0.25))
         saveRDS(x, data_fpath)
     }
 }

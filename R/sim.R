@@ -145,8 +145,8 @@
 
 # Independently generate total-expression DEG truth and HER-shift truth.
 .sample_truth <- function(n_genes, group_names, settings) {
-    is_shift <- .sample_indicator(n_genes, settings$prop_shift)
-    is_deg <- .sample_indicator(n_genes, settings$prop_deg)
+    is_shift <- .sample_indicator(n_genes, settings$p_shift)
+    is_deg <- .sample_indicator(n_genes, settings$p_deg)
 
     shift_group <- rep("", n_genes)
     deg_group <- rep("", n_genes)
@@ -239,10 +239,10 @@
         her[[truth$shift_group[i]]][i, ] <- shifted_theta
     }
 
-    if (settings$prop_zero > 0) {
+    if (settings$p_zero > 0) {
         for (g in seq_along(group_names)) {
             boundary_ids <- which(stats::rbinom(
-                n_genes, size = 1L, prob = settings$prop_zero
+                n_genes, size = 1L, prob = settings$p_zero
             ) == 1L)
             for (i in boundary_ids) {
                 absent <- sample.int(n_subgenomes, size = 1L)
@@ -417,12 +417,12 @@
 #' @param n_genes Integer. Number of homeolog tuples to simulate.
 #' @param n_replicates Integer vector. Number of replicates for each condition.
 #' @param n_subgenomes Integer. Number of subgenomes to simulate.
-#' @param prop_shift Numeric between 0 and 1. Proportion of genes assigned to the
+#' @param p_shift Numeric between 0 and 1. Proportion of genes assigned to the
 #'   exact homeolog-expression-ratio shift alternative. The default is 0.10.
-#' @param prop_deg Numeric between 0 and 1. Proportion of genes assigned a
+#' @param p_deg Numeric between 0 and 1. Proportion of genes assigned a
 #'   total-expression change independently of homeolog-expression-ratio status.
 #'   The default is 0.10.
-#' @param prop_zero Numeric between 0 and 1. Proportion of genes
+#' @param p_zero Numeric between 0 and 1. Proportion of genes
 #'   assigned a condition-by-subgenome structural zero, producing homeolog
 #'   expression ratios near 0 or 1.
 #' @param group_names Character vector of condition names.
@@ -447,16 +447,16 @@
 #' table(x@meta@is_deg, x@meta@is_shift)
 #'
 #' # Simulate a 1% homeolog-expression-ratio shift prevalence.
-#' x_rare <- sim_homeolog_counts(n_genes = 10000, prop_shift = 0.01)
+#' x_rare <- sim_homeolog_counts(n_genes = 10000, p_shift = 0.01)
 #'
 #' @importFrom methods new
 #' @export
 sim_homeolog_counts <- function(n_genes = 10000,
                                 n_replicates = c(3, 3),
                                 n_subgenomes = 2,
-                                prop_shift = 0.10,
-                                prop_deg = 0.10,
-                                prop_zero = 0.05,
+                                p_shift = 0.10,
+                                p_deg = 0.10,
+                                p_zero = 0.05,
                                 group_names = NULL,
                                 subgenome_names = NULL,
                                 seed_counts = NULL) {
@@ -466,9 +466,9 @@ sim_homeolog_counts <- function(n_genes = 10000,
         function(ri) .as_positive_int(n_replicates[[ri]], paste0("n_replicates[", ri, "]")), integer(1L))
     n_groups <- .as_positive_int(length(n_replicates), "n_replicates", min_threshold = 2L)
     n_subgenomes <- .as_positive_int(n_subgenomes, "n_subgenomes", min_threshold = 2L)
-    prop_shift <- .as_prob(prop_shift, "prop_shift")
-    prop_deg <- .as_prob(prop_deg, "prop_deg")
-    prop_zero <- .as_prob(prop_zero, "prop_zero")
+    p_shift <- .as_prob(p_shift, "p_shift")
+    p_deg <- .as_prob(p_deg, "p_deg")
+    p_zero <- .as_prob(p_zero, "p_zero")
 
     # init labels
     if (is.null(group_names)) {
@@ -489,8 +489,8 @@ sim_homeolog_counts <- function(n_genes = 10000,
 
     dispersion_model <- .fit_mean_dispersion(seed_params$population)
     settings <- list(
-        prop_shift = prop_shift,
-        prop_deg = prop_deg,
+        p_shift = p_shift,
+        p_deg = p_deg,
         baseline_her_concentration = 12,
         baseline_her_concentration_sd = 0.45,
         shift_magnitude_min = 0.45,
@@ -502,7 +502,7 @@ sim_homeolog_counts <- function(n_genes = 10000,
         offset_sd = 0.35,
         theta_floor = 1e-8,
         dispersion_shared_across_conditions = TRUE,
-        prop_zero = prop_zero,
+        p_zero = p_zero,
         n_subgenomes = n_subgenomes
     )
     truth <- .sample_truth(n_genes, group_names, settings)

@@ -8,9 +8,9 @@ sim_homeolog_counts(
   n_genes = 10000,
   n_replicates = c(3, 3),
   n_subgenomes = 2,
-  prop_shift = 0.1,
-  prop_deg = 0.1,
-  prop_zero = 0.05,
+  p_shift = 0.1,
+  p_deg = 0.1,
+  p_zero = 0.05,
   group_names = NULL,
   subgenome_names = NULL,
   seed_counts = NULL
@@ -23,14 +23,14 @@ sim_homeolog_counts(
 
 \item{n_subgenomes}{Integer. Number of subgenomes to simulate.}
 
-\item{prop_shift}{Numeric between 0 and 1. Proportion of genes assigned to the
+\item{p_shift}{Numeric between 0 and 1. Proportion of genes assigned to the
 exact homeolog-expression-ratio shift alternative. The default is 0.10.}
 
-\item{prop_deg}{Numeric between 0 and 1. Proportion of genes assigned a
+\item{p_deg}{Numeric between 0 and 1. Proportion of genes assigned a
 total-expression change independently of homeolog-expression-ratio status.
 The default is 0.10.}
 
-\item{prop_zero}{Numeric between 0 and 1. Proportion of genes
+\item{p_zero}{Numeric between 0 and 1. Proportion of genes
 assigned a condition-by-subgenome structural zero, producing homeolog
 expression ratios near 0 or 1.}
 
@@ -73,6 +73,6 @@ table(x@meta@is_shift)
 table(x@meta@is_deg, x@meta@is_shift)
 
 # Simulate a 1\% homeolog-expression-ratio shift prevalence.
-x_rare <- sim_homeolog_counts(n_genes = 10000, prop_shift = 0.01)
+x_rare <- sim_homeolog_counts(n_genes = 10000, p_shift = 0.01)
 
 }

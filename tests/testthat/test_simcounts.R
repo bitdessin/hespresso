@@ -9,11 +9,11 @@ test_that('Test function to generate artificial dataset.', {
 
     x_100_5r <- sim_homeolog_counts(n_genes = 100, n_replicates = c(5, 5))
 
-    x_100_pshift <- sim_homeolog_counts(n_genes = 100, prop_shift = 0.20)
+    x_100_pshift <- sim_homeolog_counts(n_genes = 100, p_shift = 0.20)
 
-    x_100_pdeg <- sim_homeolog_counts(n_genes = 100, prop_deg = 0.20)
+    x_100_pdeg <- sim_homeolog_counts(n_genes = 100, p_deg = 0.20)
 
-    x_100_pzero <- sim_homeolog_counts(n_genes = 100, prop_zero = 0)
+    x_100_pzero <- sim_homeolog_counts(n_genes = 100, p_zero = 0)
 })
 
 
