@@ -21,7 +21,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -57,6 +57,21 @@ jobs:
           extra-packages: |
             any::bookdown
 
+      - name: Restore CmdStan cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cmdstan
+          key: ${{ runner.os }}-cmdstan-cache-v1
+
+      - name: Install CmdStan
+        shell: Rscript {0}
+        run: |
+          if (is.null(cmdstanr::cmdstan_version(error_on_NA = FALSE))) {
+            cmdstanr::install_cmdstan()
+          }
+          cmdstanr::check_cmdstan_toolchain()
+          print(cmdstanr::cmdstan_version())
+
       - name: Build release documentation
         shell: bash
         run: |
@@ -80,7 +95,7 @@ jobs:
             "$GITHUB_WORKSPACE/_site/devel/"
 
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: _site
 
@@ -93,4 +108,4 @@ jobs:
 
     steps:
       - name: Deploy Pages
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

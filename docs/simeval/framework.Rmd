@@ -1,77 +1,127 @@
-## Evaluation Framework
+## Simulation Based Evaluation
 
-```{r sim-fw-setup, include=FALSE}
-source("../_config.R")
+### Standard Protocol
+
+The combination of `sim_homeolog_counts()` and `def_sigShift()`
+allows users to evaluate HOBIT's performance using standard metrics,
+such as precision, recall, F1 score, and area under the ROC curve (AUC).
+Here, we demonstrate this workflow with a small simulated read-count dataset.
+
+First, define a function to calculate metrics from the test results.
+The function identifies predicted homeologs with significant expression-ratio shifts
+using a false discovery rate (FDR) threshold of 0.05.
+It then compares these predictions with the ground-truth shifts defined by
+`def_sigShift()`.
+The AUC is calculated from the *p*-values in the `hobit()` output
+using the `auc()` and `roc()` functions from the `r pkg("pROC", "cran")` package [@ref_proc].
+
+
+```{r sim-fw-def-calc-metrics}
+library(pROC)
+
+calc_metrics <- function(output, q_cutoff = 0.05) {
+    # Replace NA values with 1.0 (non-significant).
+    output$pvalue[is.na(output$pvalue)] <- 1
+    output$qvalue[is.na(output$qvalue)] <- 1
+
+    # Define the ground truth and predictions.
+    gt <- def_sigShift(x)
+    pred <- (output$qvalue < q_cutoff)
+
+    # Calculate performance metrics.
+    tp <- sum(pred & gt)
+    tn <- sum(!pred & !gt)
+    fp <- sum(pred & !gt)
+    fn <- sum(!pred & gt)
+
+    precision <- tp / (tp + fp)
+    recall <- tp / (tp + fn)
+    f1 <- 2 * precision * recall / (precision + recall)
+    auc <- auc(roc(gt, 1 - output$pvalue, levels = c(FALSE, TRUE), direction = "<"))
+
+    c(precision = precision, recall = recall, f1 = f1, auc = auc)
+}
 ```
 
-
-By combining the `sim_homeolog_counts()` and `def_sigShift()` functions,
-users can evaluate the performance of HOBIT using standard metrics
-such as precision, recall, F1 score, and area under the ROC curve (AUC).
-
-For reliable evaluation,
-we recommend simulating a large number of homeologs
-to ensure the dataset contains enough homeologs with significant expression ratio shifts for robust validation.
-However, to reduce computation time in this example,
-we simulate data for only 1000 homeologs.
+Then, generate a set of simulated read counts.
 
 ```{r sim-fw-dataset, results="hide", message=FALSE, warning=FALSE}
 x <- sim_homeolog_counts(n_genes = 1000)
-x_output <- hobit(x)
-x_output$pvalue[is.na(x_output$pvalue)] <- 1
-x_output$qvalue[is.na(x_output$qvalue)] <- 1
 ```
 
-Next, predicted homeologs with significant expression ratio shifts are identified
-using an false discovery rate (FDR) threshold of 0.05.
-Performance metrics are then calculated by comparing the predicted shifts
-against the ground-truth shifts,
-which are defined using the `def_sigShift()` function.
-The AUC is computed using the *p*-values from the `hobit()` output
-with the `auc()` and `roc()` functions from the `r pkg("pROC", "cran")` package [@ref_proc].
+Next, run HOBIT MLE and use `calc_metrics()` to evaluate its performance.
 
 
-```{r sim-fw-hobit-metrics}
-library(pROC)
+```{r sim-fw-hobit-mle-metrics, message=FALSE, warning=FALSE}
+x_output_mle <- hobit(x)
+calc_metrics(x_output_mle)
+```
 
-pred_sig <- (x_output$qvalue < 0.05)
-true_sig <- def_sigShift(x, Dmax = 0.2, ORmax = 2, operator = "OR")
+The same procedure can be applied to the other methods.
 
-tp <- sum(pred_sig & true_sig)
-tn <- sum(!pred_sig & !true_sig)
-fp <- sum(pred_sig & !true_sig)
-fn <- sum(!pred_sig & true_sig)
+```{r sim-fw-methods-metrics, eval=FALSE, message=FALSE, warning=FALSE}
+x_output_mcmc_strict <- hobit(x, method = "mcmc", mode = "strict")
+calc_metrics(x_output_mcmc_strict)
 
-precision <- tp / (tp + fp)
-recall <- tp / (tp + fn)
-f1 <- 2 * precision * recall / (precision + recall)
-auc <- auc(roc(true_sig, 1 - x_output$pvalue, levels = c(FALSE, TRUE), direction = "<"))
+x_output_mcmc_fast <- hobit(x, method = "mcmc", mode = "fast")
+calc_metrics(x_output_mcmc_fast)
 
-print(c(precision = precision, recall = recall, f1 = f1, auc = auc))
+x_output_homeoroq <- homeoroq(x)
+calc_metrics(x_output_homeoroq)
 ```
 
 
-The same process can be applied to evaluate HomeoRoq as follows.
+To reduce computation time, this example simulates only 1,000 homeologs.
+For reliable evaluation, however, we recommend simulating a larger number
+of homeologs so that the dataset contains enough significant expression-ratio shifts
+for robust validation.
 
 
-```{r sim-fw-homeoroq-metrics}
-x_output <- homeoroq(x)
-x_output$pvalue[is.na(x_output$pvalue)] <- 1
-x_output$qvalue[is.na(x_output$qvalue)] <- 1
+### Large-scale Simulation Evaluation
 
-pred_sig <- (x_output$qvalue < 0.05)
-true_sig <- def_sigShift(x, Dmax = 0.2, ORmax = 2, operator = "OR")
+Using this standard protocol, we generated and evaluated simulated datasets
+10 times for each combination of `n_subgenomes` (`2` and `3`) and `n_reps` (`3` and `5`).
+The complete evaluation script is available at
+[docs/simdata_validation_framework.R](https://github.com/bitdessin/hespresso/blob/main/docs/simdata_validation_framework.R)
+in the `r pkg("hespresso")` repository.
+HomeoRoq was not evaluated when `n_subgenomes = 3`
+because it supports only allopolyploids with two subgenomes.
 
-tp <- sum(pred_sig & true_sig)
-tn <- sum(!pred_sig & !true_sig)
-fp <- sum(pred_sig & !true_sig)
-fn <- sum(!pred_sig & true_sig)
+The full evaluation takes approximately three days on an Ubuntu system with
+four threads and an Intel(R) Core(TM) i9-11900K processor running at 3.50 GHz.
+The resulting performance metrics are summarized in the figure below.
 
-precision <- tp / (tp + fp)
-recall <- tp / (tp + fn)
-f1 <- 2 * precision * recall / (precision + recall)
-auc <- auc(roc(true_sig, 1 - x_output$pvalue, levels = c(FALSE, TRUE), direction = "<"))
+```{r sim-fw-full-evaluation-metrics-viz, echo = FALSE, fig.height = 7.4,  fig.cap="Evaluation metrics. Simulation conditions are represented by the subplot columns, and metrics by the rows. In each subplot, the x-axis shows the method: MLE, MCMC (strict), or MCMC (fast). The y-axis shows the corresponding metric. Each point represents one simulation result."}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+x <- read.table("data/hobit_metrics.tsv.gz", header = TRUE, sep = '\t') %>%
+    mutate(model = factor(model, levels = c("MLE", "MCMC (strict)", "MCMC (fast)", "HOMEOROQ")))
 
-print(c(precision = precision, recall = recall, f1 = f1, auc = auc))
+x %>%
+    pivot_longer(cols = c(precision, recall, f1, auc), names_to = 'metric', values_to = 'value') %>%
+    mutate(metric = factor(metric, levels = c('auc', 'f1', 'precision', 'recall'))) %>%
+    ggplot(aes(x = model, y = value, group = model)) +
+        geom_violin() +
+        geom_jitter(width = 0.2, alpha = 0.5) +
+        facet_grid(metric ~ n_subgenomes + n_replicates, scales = 'free_y',
+                   labeller = labeller(.rows = label_value, .cols = label_both)) +
+        theme(axis.text.x = element_text(angle = 30, hjust = 0.5))
 ```
 
+The execution-time results show that HOBIT MLE is the fastest method,
+completing in a few minutes. HOBIT MCMC strict is the slowest method,
+taking approximately 60 minutes, depending on the number of subgenomes and
+replicates. HOBIT MCMC fast takes approximately half as long as MCMC strict.
+
+```{r sim-fw-full-evaluation-exetime-viz, echo = FALSE, fig.height = 3, fig.cap="Execution time (min). Simulation conditions are represented by the subplot columns. In each subplot, the x-axis shows the method: MLE, MCMC (strict), or MCMC (fast). Each point represents one simulation result."}
+x %>%
+    mutate(exe_time = exe_time / 60) %>%
+    ggplot(aes(x = model, y = exe_time, group = model)) +
+        geom_violin() +
+        geom_jitter(width = 0.2, alpha = 0.5) +
+        facet_grid(~ n_subgenomes + n_replicates, scales = 'free_y',
+                labeller = labeller(.rows = label_value, .cols = label_both)) +
+        theme(axis.text.x = element_text(angle = 30, hjust = 0.5)) +
+        ylab('execution time [min]')
+```

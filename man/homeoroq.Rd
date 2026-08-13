@@ -12,14 +12,14 @@ homeoroq(
 )
 }
 \arguments{
-\item{x}{An \linkS4class{ExpMX} class object containing normalized homeolog
+\item{x}{An \linkS4class{SeqCountData} object containing normalized homeolog
 expression data (i.e., RNA-seq read counts).}
 
-\item{chains}{Integer. Specifies the number of independent sampling
-iterations used in the statistical test.}
+\item{chains}{Integer. Specifies the number of independent MCMC chains used
+in the statistical test.}
 
-\item{iter_sampling}{Integer. Specifies the number of samples to draw per
-iteration for estimating p-values.}
+\item{iter_sampling}{Integer. Specifies the number of post-warmup samples
+to draw per chain for estimating p-values.}
 
 \item{n_threads}{Integer. Specifies the number of threads to use for parallel
 processing across sampling iterations.
@@ -44,7 +44,7 @@ making ratio comparisons infeasible.
 }
 \description{
 A statistical method for detecting shifts in homeolog expression ratios
-among two subgenomes in allopolyploids across two groups.
+between two subgenomes in allopolyploids across two groups.
 }
 \details{
 HomeoRoq estimates the probability that homeolog expression ratios
@@ -57,7 +57,7 @@ under the null hypothesis of no change between conditions.
 The \code{homeoroq()} function provides a comprehensive interface
 for detecting shifts in homeolog expression ratios across conditions.
 By default, it performs 10,000 sampling iterations
-per MCMC chain (\code{iter_sampling = 1e4}) across 4 chains (\code{chians = 4}).
+per MCMC chain (\code{iter_sampling = 1e4}) across four chains (\code{chains = 4}).
 However, for robust and reproducible estimation of statistical significance
 (i.e., \emph{p}-values), it is recommended to conduct multiple independent sampling runs,
 each with a sufficiently large number of iterations.

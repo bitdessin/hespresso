@@ -1,27 +1,40 @@
 # Installation
 
-To install the `r pkg("hespresso")` package,
-start R and run the following commands:
-
+To install the stable version of the `r pkg("hespresso")` package
+together with its required CRAN and Bioconductor dependencies,
+start R and run:
 
 ```{r installation-package, eval=FALSE}
-# CRAN Packages
-install.packages(c("remotes", "BiocManager"))
+if (!requireNamespace("BiocManager", quietly = TRUE)) {
+    install.packages("BiocManager")
+}
 
-# edgeR for dispersion estimation
-BiocManager::install("edgeR")
-
-# cmdstanr for MCMC sampling
-install.packages("cmdstanr", repos = c("https://stan-dev.r-universe.dev", getOption("repos")))
-cmdstanr::install_cmdstan()
-
-# hespresso
-remotes::install_github("bitdessin/hespresso")
+BiocManager::install("bitdessin/hespresso")
 ```
 
-Because `r pkg("hespresso")` relies on `r pkg("cmdstanr")` [@ref_stan],
-which is not available on [CRAN](https://cran.r-project.org/) or
-[Bioconductor](https://www.bioconductor.org/),
-it cannot be hosted on these repositories,
-making the installation slightly more complex than that of typical R packages.
+By default, HOBIT uses the maximum-likelihood estimation (MLE) implementation,
+which does not require Stan [@ref_stan].
+The optional Markov chain Monte Carlo (MCMC) implementation requires
+the additional `r pkg("cmdstanr")` package and CmdStan,
+which can be installed as follows:
 
+```{r installation-cmdstanr, eval=FALSE}
+install.packages("cmdstanr", repos = c("https://stan-dev.r-universe.dev", getOption("repos")))
+cmdstanr::install_cmdstan()
+```
+
+::: {.alert .alert-info}
+
+The development version of `r pkg("hespresso")` is available from
+the [`devel` branch](https://github.com/bitdessin/hespresso/tree/devel) on GitHub.
+For those interested in trying the latest features,
+the development version can be installed by running:
+
+```{r installation-devel-package, eval=FALSE}
+BiocManager::install("bitdessin/hespresso", ref = "devel")
+```
+
+As the development version may include features that are still under evaluation,
+the stable version is recommended for general use.
+
+:::

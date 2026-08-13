@@ -7,7 +7,7 @@
 plot_HER_distr(x, base = 1)
 }
 \arguments{
-\item{x}{An \linkS4class{ExpMX} class object.}
+\item{x}{An \linkS4class{SeqCountData} object.}
 
 \item{base}{Integer or character. An index or name specifying the subgenome
 used to calculate homeolog expression ratios.}
@@ -16,7 +16,7 @@ used to calculate homeolog expression ratios.}
 A list of ggplot histogram objects, one for each group.
 }
 \description{
-Visualizes distribution of homeolog expression ratio using histogram.
+Visualizes the distribution of homeolog expression ratios using histograms.
 }
 \examples{
 x <- sim_homeolog_counts(100)

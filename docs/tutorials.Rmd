@@ -1,10 +1,9 @@
 # Tutorials
 
-This chapter provides step-by-step tutorials demonstrating
-the use of `r pkg("hespresso")` with real RNA-seq datasets.
-Workflows cover data preparation, normalization, and statistical testing
-with HOBIT and HomeoRoq, illustrating practical strategies
-to detect shifts in homeolog expression ratios across difference conditions.
+This chapter provides step-by-step tutorials on using `r pkg("hespresso")`
+with real RNA-seq datasets. The workflows cover data preparation through
+statistical testing with HOBIT and demonstrate practical approaches for
+detecting shifts in homeolog expression ratios across different conditions.
 
 
 ```{r tt-sec-cflex, child='tutorials/cflexuosa.Rmd'}
@@ -17,4 +16,3 @@ to detect shifts in homeolog expression ratios across difference conditions.
 
 ```{r tt-sec-cins, child='tutorials/cinsueta.Rmd'}
 ```
-

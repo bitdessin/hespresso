@@ -1,17 +1,13 @@
 ## Allohexaploid *T. aestivum*
 
-```{r tt-wheat-setup, include=FALSE}
-source("../_config.R")
-```
-
 ### Introduction
 
 Bread wheat, *Triticum aestivum* (2n = 6x = 42, AABBDD),
 is one of the world’s most important crops
 and also serves as a model for studying allopolyploid species.
 It originated through hybridization among three diploid progenitor species,
-*Triticum urartu* (2n = 2x = 14, AA), 
-an unknown species related to  *Aegilops speltoides* (2n = 2x = 14; SS,
+*Triticum urartu* (2n = 2x = 14, AA),
+an unknown species related to *Aegilops speltoides* (2n = 2x = 14; SS,
 which is thought to be the progenitor of BB),
 and *Aegilops tauschii* (2n = 2x = 14, DD),
 containing three distinct subgenomes [@ref_wheat_origin_1; @ref_wheat_origin_2; @ref_wheatgenome].
@@ -29,39 +25,31 @@ Users may also choose to load the full dataset, which is stored
 in the [data](https://github.com/bitdessin/hespresso/tree/main/docs/data) directory, for analysis.
 
 ```{r tt-wheat-load-counts}
-gexp <- read.table("../data/t_aestivum.w20.mini.txt.gz",
+gexp <- read.table("data/t_aestivum.w20.mini.txt.gz",
                    header = TRUE, sep = "\t", row.names = 1)
 head(gexp)
 group <- c("apex", "apex", "apex", "leaf", "leaf", "leaf")
 ```
 
 Next, load the mapping table that links each gene to its corresponding homeolog triads.
+In this tab-separated table, each row represents one homeolog triad,
+and each column contains the corresponding gene from a subgenome.
 Since wheat has three subgenomes (i.e., A, B, and D),
 the table contains three columns, with each column representing one subgenome.
 
 ```{r tt-wheat-load-mappingtable}
-mapping_table <- read.table("../data/t_aestivum.homeolog.txt.gz",
+mapping_table <- read.table("data/t_aestivum.homeolog.txt.gz",
                             header = TRUE, sep = "\t")
 head(mapping_table)
 ```
 
-We then construct an `ExpMX` class object using the `newExpMX()` function.
+We then construct an `SeqCountData` class object using the `newSeqCountData()` function.
 This converts the gene expression matrix (`gexp`)
 into a homeolog expression matrix based on the mapping table (`mapping_table`).
 
 ```{r tt-wheat-create-expmx}
-x <- newExpMX(gexp, group, mapping_table)
+x <- newSeqCountData(gexp, group, mapping_table)
 x
-```
-
-Before performing the test,
-we normalize the raw read counts using the TMM method [@ref_tmm]
-to adjust for differences in library size.
-However, if the expression data (`gexp`) has already been normalized (e.g. FPKM),
-this step can be skipped.
-
-```{r tt-wheat-norm-counts}
-x <- norm_counts(x)
 ```
 
 To visualize the distributions of homeolog expression ratios, use the `plot_HER_distr()` function.
@@ -107,7 +95,6 @@ that most homeologs in wheat are equally expressed from the three subgenomes.
 After visually inspecting the distributions of homeolog expression ratios,
 use the `hobit()` function to identify homeologs
 showing significant changes in expression ratios between shoot apex and leaf tissues.
-This step takes approximately five minutes using eight threads and may vary depending on hardware performance.
 
 ```{r tt-wheat-run-hobit, results="hide", message=FALSE, warning=FALSE}
 x_output <- hobit(x)
@@ -118,10 +105,12 @@ head(x_output)
 ```
 
 Note that the `pvalue` and `qvalue` columns in `x_output` may contain `NA` values.
-This happens when at least one gene in a homeolog triad is not expressed in one or more conditions,
-making it impossible to calculate expression ratios.
-As a result, the statistical test cannot be performed for those triads.
-These `NA` values may affect sorting or counting the number of significant homeolog triads.
+This happens when at least one gene in a homeolog pair is not expressed in one or more conditions,
+making it impossible to calculate expression ratios,
+or when the full and/or reduced models cannot be constructed.
+As a result, the statistical test cannot be performed for those pairs.
+
+These `NA` values may affect sorting or counting the number of significant homeolog pairs.
 Therefore, we recommend replacing `NA` with `1` (i.e., non-significant)
 before performing downstream analyses.
 
@@ -172,48 +161,48 @@ set `subgenomes = c(1, 2)` to combine them.
 
 
 ```{r tt-wheat-combine-subgenomes}
-x_ABvsD <- combine_hexp(x, subgenomes = c(1, 2))
-x_ABvsD
+x_DvsAB <- combine_hexp(x, subgenomes = c(1, 2))
+x_DvsAB
 ```
 
 In this case, the combined A- and B-subgenomes are appended as the last subgenome,
-so the subgenome order in `x_ABvsD` becomes D and A+B.
+so the subgenome order in `x_DvsAB` becomes D and A+B.
 The distribution of homeolog expression ratios can
 then be visualized using the `plot_HER_distr()` function.
 By default, the ratios are calculated for the D-subgenome,
-as D-subgenome is now the first subgenome in `x_ABvsD`.
+as D-subgenome is now the first subgenome in `x_DvsAB`.
 
 
 ```{r tt-wheat-viz-distr-combined, fig.cap="Distribution of homeolog expression ratios of D-subgenome between shoot apex and leaf in wheat."}
-distr_plots_AB <- plot_HER_distr(x_ABvsD)
+distr_plots_AB <- plot_HER_distr(x_DvsAB)
 grid.arrange(distr_plots_AB[["apex"]] + ggtitle("AB-ratio in apex sample"),
              distr_plots_AB[["leaf"]] + ggtitle("AB-ratio in leaf sample"),
              ncol = 2)
 ```
 
 
-The resulting distributions show a peak around one-thirds,
+The resulting distributions show a peak around one-third,
 indicating that most homeologs are expressed equally between the D-subgenome
 and the combined A- and B-subgenomes.
 
 HOBIT can then be applied to the combined dataset as below.
 
 ```{r tt-wheat-combine-subgenomes-hobit, results="hide", message=FALSE, warning=FALSE}
-x_ABvsD_output <- hobit(x_ABvsD)
-x_ABvsD_output$pvalue[is.na(x_ABvsD_output$pvalue)] <- 1
-x_ABvsD_output$qvalue[is.na(x_ABvsD_output$qvalue)] <- 1
+x_DvsAB_output <- hobit(x_DvsAB)
+x_DvsAB_output$pvalue[is.na(x_DvsAB_output$pvalue)] <- 1
+x_DvsAB_output$qvalue[is.na(x_DvsAB_output$qvalue)] <- 1
 ```
 
 ```{r tt-wheat-combine-subgenomes-hobit-output}
-head(x_ABvsD_output[order(x_ABvsD_output$pvalue), ])
+head(x_DvsAB_output[order(x_DvsAB_output$pvalue), ])
 ```
 
 The detection results can be visualized as follows.
 
 
 ```{r tt-wheat-viz-HER-changes-combined, fig.cap="Changes in homeolog expression ratios of the D-subgenome versus the combined A- and B-subgenomes between shoot apex and leaf tissues. Each point represents the ratio in shoot apex (x-axis) and leaf (y-axis). Orange points indicate homeologs with significant changes, gray points indicate homeologs without significant changes."}
-is_sig <- ifelse(x_ABvsD_output$qvalue < 0.01, "q<0.01", "q>=0.01")
-plot_HER(x_ABvsD, label = is_sig)
+is_sig <- ifelse(x_DvsAB_output$qvalue < 0.01, "q<0.01", "q>=0.01")
+plot_HER(x_DvsAB, label = is_sig)
 ```
 
 

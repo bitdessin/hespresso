@@ -1,12 +1,8 @@
 ## Allotriploid *C. insueta*
 
-```{r tt-cins-setup, include=FALSE}
-source("../_config.R")
-```
-
 ### Introduction
 
-Allotriploid *Cardamine insueta* (2n = 3x = 24, RRA) serves as an example of an uneven subgenome composition.
+Allotriploid *Cardamine insueta* (2n = 3x = 24, RRA) illustrates an uneven subgenome composition.
 Two of its subgenomes are derived from *Cardamine rivularis* (2n = 2x = 16, RR),
 a species inhabiting grassy areas away from riversides,
 while the third subgenome comes from *Cardamine amara* (2n = 2x = 16, AA),
@@ -21,42 +17,37 @@ similar to an ANOVA approach.
 We use a sample dataset containing 500 homeolog pairs (`c_insueta.mini.txt.gz`) randomly selected from the original experiment,
 although the full dataset is available in the [data](https://github.com/bitdessin/hespresso/tree/main/docs) directory
 for users who wish to analyze it.
-This data span nine time points (0, 2, 4, 8, 12, 24, 48, 72, and 96 hours)
+This dataset spans nine time points (0, 2, 4, 8, 12, 24, 48, 72, and 96 hours)
 following leaf submergence and can be loaded using the following code.
 
 ```{r tt-cins-load-counts}
-gexp <- read.table("../data/c_insueta.mini.txt.gz",
+gexp <- read.table("data/c_insueta.mini.txt.gz",
                    header = TRUE, sep = "\t", row.names = 1)
 head(gexp)
 group <- c("T00", "T02", "T04", "T08", "T12", "T24", "T48", "T72", "T96")
 ```
 
 Next, load the homeolog mapping table,
-which links gene expression values to their corresponding homeolog pairs.
-This file is tab-separated,
-with the first and second columns representing genes from *C. rivularis* and *C. amara*, respectively.
+which defines the genes belonging to each homeolog tuple.
+In this tab-separated table, each row represents one homeolog tuple,
+and each column contains the corresponding gene from a subgenome.
+In this example, the first and second columns contain gene names
+from *C. rivularis* and *C. amara*, respectively.
 
 ```{r tt-cins-load-mappingtable}
-mapping_table <- read.table("../data/c_insueta.homeolog.txt.gz",
+mapping_table <- read.table("data/c_insueta.homeolog.txt.gz",
                             header = TRUE, sep = "\t")
 head(mapping_table)
 ```
 
-Use the `newExpMX()` function
+Use the `newSeqCountData()` function
 to create a homeolog expression matrix from the gene expression data (`gexp`)
 and mapping table (`mapping_table`).
-The result is stored as an `ExpMX` class object.
+The result is stored as an `SeqCountData` class object.
 
 ```{r tt-cins-create-expmx}
-x <- newExpMX(gexp, group, mapping_table)
+x <- newSeqCountData(gexp, group, mapping_table)
 x
-```
-
-Normalize the read counts using the TMM method [@ref_tmm],
-since the data has not been normalized.
-
-```{r tt-cins-norm-counts}
-x <- norm_counts(x)
 ```
 
 Users can visualize the distribution of homeolog expression ratios using the `plot_HER_distr()` function.
@@ -93,17 +84,16 @@ which requires multiple replicates.
 x_output <- hobit(x, no_replicate = TRUE)
 ```
 
-This step takes approximately five minutes
-using eight threads and may vary depending on hardware performance.
-
 ```{r tt-cins-hobit-output}
 head(x_output)
 ```
 
 Note that the `pvalue` and `qvalue` columns in `x_output` may contain `NA` values.
 This happens when at least one gene in a homeolog pair is not expressed in one or more conditions,
-making it impossible to calculate expression ratios.
+making it impossible to calculate expression ratios,
+or when the full and/or reduced models cannot be constructed.
 As a result, the statistical test cannot be performed for those pairs.
+
 These `NA` values may affect sorting or counting the number of significant homeolog pairs.
 Therefore, we recommend replacing `NA` with `1` (i.e., non-significant)
 before performing downstream analyses.
@@ -113,12 +103,9 @@ For example:
 ```{r tt-cins-hobit-replace-na}
 x_output$pvalue[is.na(x_output$pvalue)] <- 1
 x_output$qvalue[is.na(x_output$qvalue)] <- 1
-```
 
-```{r tt-cins-hobit-replace-qcutoff}
-x_output[x_output$qvalue < 0.05,]
+head(x_output[order(x_output$pvalue), ])
 ```
-
 
 
 

@@ -4,49 +4,46 @@
 \alias{hobit}
 \title{HOBIT: Detect Shifts in Homeolog Expression Ratios}
 \usage{
-hobit(x, method = c("mcmc", "mle"), ...)
+hobit(x, method = c("mle", "mcmc"), .debug = FALSE, ...)
 }
 \arguments{
-\item{x}{An \linkS4class{ExpMX} object.}
+\item{x}{An \linkS4class{SeqCountData} object.}
 
 \item{method}{Character string specifying the inference method. Available
-values are \code{"mcmc"} and \code{"mle"}. The default is \code{"mcmc"}.}
+values are \code{"mcmc"} and \code{"mle"}. The default is \code{"mle"}.}
+
+\item{.debug}{Logical. If \code{TRUE}, return all statistical test results for
+detailed analysis or debugging. If \code{FALSE}, return only the main
+statistical test results.}
 
 \item{...}{Additional arguments passed to \code{\link[=hobit_mcmc]{hobit_mcmc()}} or \code{\link[=hobit_mle]{hobit_mle()}},
 according to \code{method}.}
 }
 \value{
-A data frame with one row per homeolog tuple. The returned columns
-depend on the selected inference method. See \code{\link[=hobit_mcmc]{hobit_mcmc()}} and
-\code{\link[=hobit_mle]{hobit_mle()}} for details.
+A data frame with one row per homeolog tuple. By default, the result
+contains \code{gene}, \code{pvalue}, \code{qvalue}, \code{Dmax}, \code{LRmax}, \code{RRmax}, and
+\verb{theta0__*} columns. Set \code{.debug = TRUE} to return all method-specific
+columns.
 }
 \description{
 Tests whether homeolog expression ratios differ among experimental
 conditions in allopolyploid RNA-seq data.
 }
 \details{
-\code{hobit()} is the main entry point for HOBIT analysis. It dispatches the
-analysis to either the MCMC implementation or the maximum-likelihood
-implementation according to \code{method}.
+\code{hobit()} is the main entry point for HOBIT analysis. It supports maximum
+likelihood and MCMC-based inference through the \code{method} argument, with MLE
+as the default.
 
-Two methods are available:
-\itemize{
-\item \code{"mcmc"} uses the original Stan-based MCMC implementation evaluated in
-Sun et al. (2026).
-\item \code{"mle"} fits the null and alternative models by maximum likelihood,
-and then performs a likelihood ratio test.
-}
-
-Method-specific arguments supplied through \code{...} are passed directly to
-\code{\link[=hobit_mcmc]{hobit_mcmc()}} or \code{\link[=hobit_mle]{hobit_mle()}}.
+Detailed methodological background and usage guidance are available at
+\url{https://bitdessin.github.io/hespresso/}.
 }
 \examples{
 x <- sim_homeolog_counts(n_genes = 10)
 
-x_output_mcmc_1 <- hobit(x)
-# x_output_mcmc_2 <- hobit(x, method = "mcmc")
+x_output_mle_1 <- hobit(x)
+# x_output_mle_2 <- hobit(x, method = "mle")
 
-x_output_mle <- hobit(x, method = "mle")
+x_output_mcmc <- hobit(x, method = "mcmc")
 
 }
 \references{
@@ -57,5 +54,5 @@ in allopolyploids.
 \doi{10.1111/nph.70648}
 }
 \seealso{
-\code{\link[=hobit_mcmc]{hobit_mcmc()}}, \code{\link[=hobit_mle]{hobit_mle()}}, \linkS4class{ExpMX}
+\code{\link[=hobit_mcmc]{hobit_mcmc()}}, \code{\link[=hobit_mle]{hobit_mle()}}, \linkS4class{SeqCountData}
 }

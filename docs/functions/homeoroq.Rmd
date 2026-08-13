@@ -1,9 +1,5 @@
 ## HomeoRoq
 
-```{r fc-hq-setup, include=FALSE}
-source("../_config.R")
-```
-
 HomeoRoq [@ref_homeoroq] estimates the probability that
 homeolog expression ratios remain constant
 between two experimental groups using RNA-seq read count data for each homeolog.
@@ -15,7 +11,7 @@ The `homeoroq()` function provides a complete interface
 for detecting homeologs whose expression ratios differ between two conditions.
 
 By default, it performs 10,000 sampling iterations (`iter_sampling = 1e4`) per probability calculation
-and repeats the calculation four times (`chians = 4`).
+and repeats the calculation four times (`chains = 4`).
 However, for robust and reproducible estimation of statistical significance (i.e., *p*-values),
 it is recommended to run multiple independent sampling replicates,
 each with a sufficiently large number of iterations.
@@ -25,30 +21,32 @@ set `iter_sampling = 1e4` and `chains = 10`.
 
 ### Inputs
 
-The `homeoroq()` function requires an input object of class `ExpMX`,
-same to the `hobit()` function.
+The `homeoroq()` function requires an input object of class `SeqCountData`,
+as does the `hobit()` function.
+The original implementation of HomeoRoq requires and evaluates FPKM [@ref_homeoroq].
+For explanatory purposes, we use raw read counts here.
 
 
-```{r fc-hq-input-newExpMX}
-gexp <- read.table("../data/c_flexuosa.0516.mini.txt.gz",
+```{r fc-hq-input-newSeqCountData}
+gexp <- read.table("data/c_flexuosa.0516.mini.txt.gz",
                    header = TRUE, sep = "\t", row.names = 1)
+
+# Normalize gexp to FPKM to reproduce the HomeoRoq analysis.
+
 group <- c("wet", "wet", "wet", "dry", "dry", "dry")
-mapping_table <- read.table("../data/c_flexuosa.homeolog.txt.gz",
+mapping_table <- read.table("data/c_flexuosa.homeolog.txt.gz",
                             header = TRUE, sep = "\t")
-x <- newExpMX(gexp, group, mapping_table)
+x <- newSeqCountData(gexp, group, mapping_table)
 ```
 
-### Test
+### Statistical Test
 
-Once an `ExpMX` object is prepared,
-normalize the counts if the data have not already been normalized,
-then run the test using the `homeoroq()` function.
+Once an `SeqCountData` object is prepared,
+run the test using the `homeoroq()` function.
 
 ```{r fc-hq-run-homeoroq, results="hide", message=FALSE, warning=FALSE}
-x <- norm_counts(x)
 x_output <- homeoroq(x)
 ```
-
 
 ### Outputs
 
@@ -86,8 +84,6 @@ x_output$pvalue[is.na(x_output$pvalue)] <- 1
 x_output$qvalue[is.na(x_output$qvalue)] <- 1
 ```
 
-
-
 ### Options
 
 The number of iterations and number of samples drawn per iteration can be
@@ -103,4 +99,3 @@ Additionally, the `n_threads` option can be used to run iterations in parallel.
 ```{r fc-hq-opts-threds, eval=FALSE}
 x_output <- homeoroq(x, chains = 8, iter_sampling = 1e5, n_threads = 8)
 ```
-

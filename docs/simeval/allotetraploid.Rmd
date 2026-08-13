@@ -1,9 +1,5 @@
 ## Simulating Allotetraploid Data
 
-```{r sim-2x-setup, include=FALSE}
-source("../_config.R")
-```
-
 The `r pkg("hespresso")` package provides functions
 to simulate artificial read counts for allotetraploid and allohexaploid species.
 By default, the simulation generates read counts
@@ -19,7 +15,7 @@ x <- sim_homeolog_counts()
 x
 ```
 
-Options can be flexibly customized by users.
+Users can customize the simulation options.
 For example, to simulate data with 1,000 homeologs and 5 replicates per condition,
 run as follows.
 
@@ -28,9 +24,9 @@ x <- sim_homeolog_counts(n_gene = 1000, n_replicates = c(5, 5))
 x
 ```
 
-Parameters used for simulating read counts are stored in the `x` object
-returned by the `sim_homeolog_counts()` function.
-Users can access these parameters via the `@meta` slot of the `x` object.
+The parameters used to simulate read counts are stored in the `x` object
+returned by `sim_homeolog_counts()`.
+Users can access these parameters through the `@meta` slot of the `x` object.
 For example, `x@meta` contains the following information:
 
 ```{r sim-2x-meta-slotnames}
@@ -38,7 +34,7 @@ slotNames(x@meta)
 ```
 
 To retrieve the ground-truth means used for the simulation,
-users can access the `mu` slot as follows.
+users can access the `mu` slot as shown below.
 
 ```{r sim-2x-meta-mu}
 names(x@meta@mu)
@@ -54,8 +50,22 @@ The fitted model function can be accessed via the `nls` slot.
 x@meta@nls
 ```
 
-Additionally, the ground-truth homeolog expression ratios can be calculated manually
-from the ground-truth means, or they can be retrieved directly from the `her` slot, as follows.
+The ground-truth labels for homeolog expression ratio (HER) shifts are stored in
+`x@meta@is_shift`. Users can retrieve these labels directly from this slot or
+call `def_sigShift(x)` without any additional arguments.
+
+```{r sim-2x-meta-isshift}
+table(x@meta@is_shift)
+```
+
+
+```{r sim-2x-meta-defsigshift-default}
+gt <- def_sigShift(x)
+table(gt)
+```
+
+The ground-truth HERs for each condition
+can be retrieved directly from the `her` slot, as shown below.
 
 ```{r sim-2x-meta-her}
 names(x@meta@her)
@@ -63,29 +73,26 @@ head(x@meta@her[[1]])
 head(x@meta@her[[2]])
 ```
 
-Using this information,
-users can define homeologs that show significant changes in expression ratios between conditions.
-Alternatively, the `def_sigShift()` function can automatically identify homeologs
-with significant shifts without the need for manual calculations.
-For example, to identify homeologs with a maximum absolute ratio difference (`Dmax`) greater than 0.2
-or a maximum odds ratio (`ORmax`) exceeding 2.0, use the following code.
+Using these ground-truth HERs,
+users can also define ratio-shifted homeologs by setting thresholds for the
+maximum absolute ratio difference (`Dmax`) and maximum odds ratio (`ORmax`).
+These thresholds can be selected according to the true effect sizes of interest.
+For example, the following code identifies homeologs with a `Dmax` greater than
+0.2 or an `ORmax` exceeding 2.0.
 
 ```{r sim-2x-defgtrch}
-x <- sim_homeolog_counts()
-
 is_sig <- def_sigShift(x, Dmax = 0.2, ORmax = 2, operator = "OR")
 table(is_sig)
 ```
 
 The output shows the number of homeologs meeting these thresholds.
 
-To visualize the distribution of expression ratios across conditions,
-use the `plot_HER_distr()` function.
+To visualize the distribution of HERs across conditions,
+use `plot_HER_distr()`.
 This returns a list of histograms, one per condition,
 with ratios calculated by default for the first subgenome (`base = 1`).
 
 ```{r sim-2x-plotherdistr}
-x <- sim_homeolog_counts()
 distr_plots <- plot_HER_distr(x)
 ```
 
@@ -96,7 +103,7 @@ the `plot_HER_distr()` function returns two histograms.
 names(distr_plots)
 ```
 
-To display the distributions for each group, run as follows.
+To display the distributions for each group, run the following code.
 
 ```{r sim-2x-plotherdistr-plots, fig.cap="Distribution of homeolog expression ratios in two simulated groups."}
 library(ggplot2)
@@ -108,8 +115,8 @@ grid.arrange(distr_plots[["group_1"]] + ggtitle("group_1"),
 ```
 
 
-To compare expression ratios between groups, use the `plot_HER()` function,
-which by default plots ratios for the first subgenome in a scatter plot.
+To compare HERs between groups, use the `plot_HER()` function,
+which by default plots HERs for the first subgenome in a scatter plot.
 
 
 ```{r sim-2x-plother, fig.cap="Changes in homeolog expression ratios between two groups. Each point represents the expression ratio in group 1 (x-axis) and group 2 (y-axis)."}
@@ -120,7 +127,6 @@ If the dataset was generated using `sim_homeolog_counts()`,
 ground-truth significant shifts can be highlighted as follows using the `def_sigShift()` function.
 
 ```{r sim-2x-plother-label, fig.cap="Changes in homeolog expression ratios between two groups. Orange points indicate homeologs with significant changes in expression ratios, while gray points represent those without significant changes."}
-is_sig <- def_sigShift(x, Dmax = 0.2, ORmax = 2.0)
+is_sig <- def_sigShift(x)
 plot_HER(x, label = is_sig, alpha = 0.3)
 ```
-

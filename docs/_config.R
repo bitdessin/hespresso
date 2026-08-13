@@ -1,3 +1,4 @@
+future::plan(future::sequential)
 rm(list = ls(all = TRUE))
 
 library(hespresso)
@@ -5,8 +6,15 @@ options(mc.cores = parallel::detectCores(logical = TRUE))
 options(width = 10000)
 options(ggplot2.discrete.colour = c("#999999", "#E69F00", "#56B4E9", "#009E73",
                                     "#F0E442", "#0072B2", "#D55E00", "#CC79A7"))
+
+docs_dir <- normalizePath(getwd(), mustWork = TRUE)
+if (!file.exists(file.path(docs_dir, "_bookdown.yml"))) {
+    stop("Render the book from the `docs` directory.", call. = FALSE)
+}
+knitr::opts_knit$set(root.dir = docs_dir)
+
 knitr::opts_chunk$set(tidy = FALSE,
-                      cache = TRUE,
+                      cache = FALSE,
                       error = TRUE,
                       warning = FALSE,
                       message = FALSE,

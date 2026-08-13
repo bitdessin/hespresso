@@ -1,53 +1,245 @@
 ## HOBIT
 
-```{r fc-hobit-setup, include=FALSE}
-source("../_config.R")
-```
+### Model
 
-HOBIT [@ref_hobit] is a statistical method designed
-to detect homeologs whose expression ratios differ across multiple conditions.
-It employs a likelihood ratio test (LRT) to compare two hierarchical models:
-a full model that allows homeolog expression ratios to vary among conditions
-and a reduced model that assumes constant ratios across all conditions.
+HOBIT [@ref_hobit] is a statistical method for detecting
+ratio-shifted homeologs (RSHs), whose homeolog expression ratios (HERs)
+differ among experimental conditions. For each homeolog tuple, HOBIT compares
+a full model that allows the HER to vary among conditions with a reduced model
+that assumes a common HER across conditions.
 
-HOBIT models homeolog expression with a negative binomial (NB) distribution.
-Specifically, the expression level of a homeolog on the $i$-th subgenome,
-denoted as $x_i$, is assumed to follow an NB distribution
-with mean $\mu\theta_i$ and dispersion $\phi$,
-
+Because RNA-seq read counts commonly exhibit overdispersion, HOBIT
+models homeolog expression using a negative binomial (NB) distribution:
 
 $$
-x_{i} \sim NB(\mu\theta_{i}, \phi)
+f_{\mathrm{NB}}(x \mid \mu, \phi) =
+\binom{x+\phi-1}{x}
+\left(\frac{\mu}{\mu+\phi}\right)^x
+\left(\frac{\phi}{\mu+\phi}\right)^\phi,
 $$
 
-where $\mu$ represents the total gene expression across all subgenomes
-and $\theta_{i}$ denotes the homeolog expression ratio for the $i$-th subgenome.
+where $\mu$ and $\phi$ are the mean and dispersion parameters, respectively.
+Under this parameterization,
 
-By default, HOBIT samples the parameters
-$\mu$ and $\boldsymbol{\theta} = \left(\theta_{1}, \theta_{2}, \cdots \right)$
-from non-informative prior (NIP) distributions.
-The dispersion parameter $\phi$ is estimated using the `estimateDisp()` function
-from the `r pkg("edgeR", "bioc")` package [@ref_edger].
-Based on these assumptions,
-HOBIT performs Markov chain Monte Carlo (MCMC) sampling
-to fit both the full and reduced models
-and to compute their respective likelihoods.
-Then, a LRT is conducted using the likelihoods derived from the two models.
+$$
+\operatorname{E}(X)=\mu, \qquad
+\operatorname{Var}(X)=\mu+\frac{\mu^2}{\phi}.
+$$
 
-The `hobit()` function provides an end-to-end interface for parameter estimation,
-model fitting, likelihood computation, and hypothesis testing.
-It internally uses the `sample()` function from the `r pkg("cmdstanr")` package [@ref_stan]
-to perform MCMC sampling,
-inheriting its configuration options for flexible and scalable inference.
+Let $x_{ik}^{c}$ denote the normalized expression count for subgenome $k$ in
+biological replicate $i$ under condition $c$. For example, in an experiment
+with three biological replicates of allohexaploid wheat under control ($C$)
+and treatment ($T$) conditions, $k \in \{A,B,D\}$, $i \in \{1,2,3\}$, and
+$c \in \{C,T\}$.
+
+For condition $c$, let $\mu^{c}$ denote the mean total expression of the
+homeolog tuple across all subgenomes, let $\phi^{c}$ denote its dispersion,
+and let
+
+$$
+\boldsymbol{\theta}^{c}
+=
+\left(\theta_{1}^{c},\ldots,\theta_{K}^{c}\right)
+$$
+
+be the HER vector, subject to
+
+$$
+\theta_{k}^{c} \geq 0, \qquad
+\sum_{k=1}^{K}\theta_{k}^{c}=1.
+$$
+
+The likelihood of the observed homeolog counts under condition $c$ is
+
+$$
+\mathcal{L}
+\left(
+\boldsymbol{\theta}^{c},
+\mu^{c},
+\phi^{c}
+\right)
+=
+\prod_{k}\prod_{i}
+f_{\mathrm{NB}}
+\left(
+x_{ik}^{c}
+\mid
+\theta_{k}^{c}\mu^{c},
+\phi^{c}
+\right).
+$$
+
+In the original HOBIT algorithm, $\mu^{c}$ and
+$\boldsymbol{\theta}^{c}$ are estimated by Markov chain Monte Carlo (MCMC)
+sampling from non-informative prior distributions. The dispersion
+$\phi^{c}$ is estimated in advance using `estimateDisp()` from the
+`r pkg("edgeR", "bioc")` package [@ref_edger], which shares information across
+homeologs and stabilizes dispersion estimation.
+
+To test whether HERs differ among conditions, HOBIT compares the full and
+reduced models. For the two-condition example, the full model allows separate
+HER vectors under the control and treatment conditions:
+
+$$
+\log \mathcal{L}_{\mathrm{full}}
+=
+\sum_{c=C,T}
+\log \mathcal{L}
+\left(
+\boldsymbol{\theta}^{c},
+\mu^{c},
+\phi^{c}
+\right).
+$$
+
+The reduced model represents the null hypothesis and uses a shared HER vector,
+$\boldsymbol{\theta}^{S}$, under both conditions:
+
+$$
+\log \mathcal{L}_{\mathrm{reduced}}
+=
+\sum_{c=C,T}
+\log \mathcal{L}
+\left(
+\boldsymbol{\theta}^{S},
+\mu^{c},
+\phi^{c}
+\right),
+$$
+
+where the original algorithm defines
+
+$$
+\boldsymbol{\theta}^{S}
+=
+\frac{
+\boldsymbol{\theta}^{C}
++
+\boldsymbol{\theta}^{T}
+}{2}.
+$$
+
+For more than two conditions, the corresponding shared vector is obtained from
+the condition-specific HER vectors, and the likelihood is summed over all
+conditions. Under the null hypothesis,
+
+$$
+\boldsymbol{\theta}^{C}
+=
+\boldsymbol{\theta}^{T}
+=
+\boldsymbol{\theta}^{S},
+$$
+
+so the full and reduced models have the same likelihood in theory.
+
+After calculating the two likelihoods, the original HOBIT algorithm performs a
+likelihood ratio test. The unnormalized p-value is
+
+$$
+P_{\mathrm{raw}}
+=
+\chi^{2}
+\left(
+-2
+\left(
+\log \mathcal{L}_{\mathrm{reduced}}
+-
+\log \mathcal{L}_{\mathrm{full}}
+\right),
+(C-1)(K-1)
+\right),
+$$
+
+where $C$ and $K$ are the numbers of conditions and subgenomes, respectively,
+and $\chi^{2}(t,\nu)$ denotes the upper-tail probability of a chi-squared
+variable with $\nu$ degrees of freedom evaluated at $t$.
+
+
+### Implementation
+
+The current `r pkg("hespresso")` package implements three variants of HOBIT:
+
+- HOBIT MLE
+- HOBIT MCMC fast
+- HOBIT MCMC strict
+
+
+**HOBIT MLE** {#hobit-mle}
+
+HOBIT MLE optimizes the full and reduced models independently and calculates
+*p*-values from the resulting maximum-likelihood estimates (MLE).
+The likelihood-ratio statistic is
+
+$$
+2
+\left(
+\log \mathcal{L}_{\mathrm{full}}
+-
+\log \mathcal{L}_{\mathrm{reduced}}
+\right).
+$$
+
+HOBIT MLE requires raw count data and incorporates library size normalization internally.
+Without MCMC sampling, the analysis of
+10,000 homeolog tuples takes several minutes.
+
+
+**HOBIT MCMC strict** {#hobit-mcmc-strict}
+
+HOBIT MCMC in strict mode uses a stricter model comparison procedure by sampling
+the full and reduced models independently. Although it requires nearly twice
+the execution time of fast mode---approximately 40 minutes for 10,000 homeolog
+tuples---it provides an explicit fit for each hypothesis.
+
+This variant incorporates library size normalization internally by applying
+sample-specific normalization offsets to raw count data. Likelihood summaries
+are based on posterior samples rather than MLE.
+
+
+**HOBIT MCMC fast** {#hobit-mcmc-fast}
+
+HOBIT MCMC in fast mode constructs the full model by MCMC sampling and
+constructs the reduced model using a shared HER derived from the full model
+posterior. Because the reduced model is not sampled independently, this mode
+reduces the execution time by approximately half, requiring about 20 minutes
+for 10,000 homeolog tuples. Likelihood summaries are based on posterior samples
+rather than MLE, and *p*-values are computed from the posterior samples.
+
+Because the likelihood difference can become increasingly sensitive as the
+number of biological replicates increases, HOBIT MCMC fast additionally
+applies an ad hoc normalization using the average number of replicates per
+condition, $R$, and reports the resulting value as the p-value:
+
+$$
+P
+=
+\chi^{2}
+\left(
+-2
+\left(
+\log \mathcal{L}_{\mathrm{reduced}}
+-
+\log \mathcal{L}_{\mathrm{full}}
+\right)
+\left(
+\frac{\log R+1}{R}
+\right),
+(C-1)(K-1)
+\right).
+$$
+
+This variant (i.e., HOBIT MCMC fast) corresponds to the implementation
+evaluated and described in the original paper [@ref_hobit].
 
 
 ### Inputs
 
-The `hobit()` function requires an input object of class `ExpMX`.
+The HOBIT functions require an input object of class `SeqCountData`.
 To create this object from real RNA-seq data,
 users need to provide the following three components:
 
-- a gene expression matrix
+- a gene expression matrix (i.e., raw read counts)
 - a vector or data frame of condition labels
 - a mapping table to organize gene expression data into homeolog expression
 
@@ -58,10 +250,16 @@ The gene expression matrix should be a data frame or matrix,
 with row names corresponding to gene names.
 
 ```{r fc-hobit-input-preparation-gexp}
-gexp <- read.table("../data/c_flexuosa.0516.mini.txt.gz",
+gexp <- read.table("data/c_flexuosa.0516.mini.txt.gz",
                    header = TRUE, sep = "\t", row.names = 1)
 head(gexp)
 ```
+
+Note that all HOBIT variants require raw, unnormalized read counts.
+Do not provide transcripts per million (TPM),
+fragments per kilobase of transcript per million mapped reads (FPKM),
+counts per million (CPM), normalized counts, or log-transformed expression values.
+
 
 The condition labels can be provided as a vector or a data frame.
 
@@ -74,227 +272,256 @@ The mapping table (`mapping_table`) is a data frame
 in which the first and second columns correspond to gene names
 from _C. hirsuta_ and _C. amara_, respectively.
 It is assumed that all gene names in both columns appear
-in the row names of gene expression matrix (`gexp`).
+in the row names of the gene expression matrix (`gexp`).
 
 ```{r fc-hobit-input-preparation-group}
-mapping_table <- read.table("../data/c_flexuosa.homeolog.txt.gz",
+mapping_table <- read.table("data/c_flexuosa.homeolog.txt.gz",
                             header = TRUE, sep = "\t")
 head(mapping_table)
 ```
 
 Once the three required components are prepared,
-an `ExpMX` object can be created using the `newExpMX()` function.
+an `SeqCountData` object can be created using the `newSeqCountData()` function.
 
-```{r, fc-hobit-input-newExpMX}
-x <- newExpMX(gexp, group, mapping_table)
+```{r fc-hobit-input-newSeqCountData}
+x <- newSeqCountData(gexp, group, mapping_table)
 x
 ```
 
 
 ### Test
 
-Usually, normalization is required to correct for differences in library sizes
-across replicates.
-If the given expression data (`gexp`) have not been normalized,
-apply an appropriate normalization method before analysis.
-In this example, we normalize the data using the `norm_counts()` function
-provided in the `r pkg("hespresso")` package.
 
-```{r, fc-hobit-run-norm}
-x <- norm_counts(x)
+**HOBIT MLE**
+
+HOBIT MLE can be run with the `hobit()` function using its default settings,
+in which `method = "mle"` is set.
+
+```{r fc-hobit-run-mle, results="hide", message=FALSE, warning=FALSE}
+x_output_mle <- hobit(x)
 ```
 
-By default, `norm_counts()` function performs TMM normalization
-by internally calling the `r pkg("edgeR", "bioc")` package [@ref_tmm; @ref_edger].
-However, users may choose to perform normalization using other appropriate
-packages such as `r pkg("DESeq2", "bioc")` [@ref_deseq2].
-Note that, this step can be skipped
-if the expression data has already been normalized, such as FPKM and TPM.
+Alternatively, users can specify the `method` argument explicitly.
 
-Once the `ExpMX` object has been prepared and the data have been normalized,
-homeologs with shifted expression ratios
-can be detected using HOBIT by running the `hobit()` function, as shown below.
+```{r fc-hobit-run-mle-2, eval=FALSE, message=FALSE, warning=FALSE}
+x_output_mle <- hobit(x, method = "mle")
+```
 
-```{r fc-hobit-run-hobit, results="hide", message=FALSE, warning=FALSE}
-x_output <- hobit(x)
+
+**HOBIT MCMC strict**
+
+HOBIT MCMC strict mode can be run with the `hobit()` function using
+`method = "mcmc"`.
+
+
+```{r fc-hobit-run-mcmc-strict, eval=FALSE, message=FALSE, warning=FALSE}
+x_output_strict <- hobit(x, method = "mcmc")
+```
+
+Alternatively, the following usage has the same effect.
+
+
+```{r fc-hobit-run-mcmc-stric-2, eval=FALSE, message=FALSE, warning=FALSE}
+x_output_strict <- hobit(x, method = "mcmc", mode = "strict")
+```
+
+
+**HOBIT MCMC fast**
+
+
+HOBIT MCMC fast mode should be run with the corresponding arguments
+of the `hobit()` function.
+
+```{r fc-hobit-run-mcmc-fast, eval=FALSE, message=FALSE, warning=FALSE}
+x_output_fast <- hobit(x, method = "mcmc", mode = "fast")
 ```
 
 
 ### Outputs
 
-The result (`x_output`) is a data frame with one row per homeolog.
-The row order matches the input,
-and the columns summarize the results of the statistical test.
-The output includes the following statistics.
+Each method returns a data frame with one row per homeolog tuple, and the row
+order matches the input. All three variants report the following principal
+columns:
+
+- `gene`: homeolog-tuple identifier
+- `pvalue`: p-value from the likelihood ratio test
+- `qvalue`: Benjamini--Hochberg-adjusted p-value
+- `theta0__*`: estimated HER shared across conditions under the reduced model
+- `theta1__*__*`: condition-specific HER estimates under the full model
+- `D__*`: differences in individual subgenome proportions
+- `logLik_H0` and `logLik_H1`: log-likelihood summaries for the reduced and full models
+- `lrt`: likelihood-ratio statistic
+- `df`: asymptotic degrees of freedom
+- `LR__*`: changes in pairwise subgenome log-ratios
+- `RR__*`: exponentiated pairwise log-ratio changes
+- `Dmax`, `LRmax`, and `RRmax`: maximum effect-size summaries
+- `status`: fitting and testing status
 
 
-```{r, fc-hobit-output-print}
-head(x_output)
+```{r fc-hobit-output-print}
+head(x_output_mle)
 ```
 
-- `gene`: Homeolog ID. The gene names defined in the first column of the mapping table.
-- `pvalue`: *p*-value from the LRT based on normalized likelihoods. `NA` indicates that the homeolog is expressed in only one condition, making ratio comparisons infeasible and consequently preventing the calculation of *p*-value.
-- `qvalue`: Benjamini–Hochberg adjusted `pvalue`.
-- `raw_pvalue`: *p*-value from the LRT using raw likelihoods.
-- `raw_qvalue`: Benjamini–Hochberg adjusted `raw_pvalue`.
-- `D__$__*`: Difference in expression ratios for subgenome `$` between the two groups represented by `*`.
-- `OR__$__*`: Odds ratio of expression ratios for subgenome `$` between the two groups represented by `*`.
-- `Dmax`: Maximum absolute difference in expression ratios (`D__$__*`) observed across all subgenomes and group comparisons.
-- `ORmax`: Maximum odds ratio in expression ratios (`OR__$__*`) observed across all subgenomes and group comparisons.
-- `theta0__$`: Posterior expression ratio estimates shared across all conditions, where `$` denotes the subgenome name.
-- `theta1__$__*`: Posterior expression ratio estimates specific to each condition, where `$` denotes the subgenome name and `*` denotes the group name.
-- `logLik_H0`: Log-likelihood of the reduced model.
-- `logLik_H1`: Log-likelihood of the full model.
+The `pvalue` and `qvalue` columns may contain `NA` values when a test cannot be
+completed, for example because a condition has zero total expression or because
+model fitting fails. The `status` column returned by the MLE and strict MCMC
+implementations should be inspected before downstream analysis.
 
-
-Note that all statistics are derived from MCMC samples and
-may differ from those calculated directly from the observed RNA-seq read counts.
-
-Furthermore, the `pvalue` and `qvalue` columns in `x_output` may contain `NA` values.
-This happens when at least one gene in a homeolog tuple is not expressed in one or more conditions,
-making it impossible to calculate expression ratios.
-As a result, the statistical test cannot be performed for those tuples.
-These `NA` values may affect sorting or counting the number of significant homeolog tuples.
-Therefore, we recommend replacing `NA` with `1` (i.e., non-significant)
-before performing downstream analyses.
-For example:
-
+If failed tests are to be treated as non-significant in an operational analysis,
+replace missing values with `1` explicitly:
 
 ```{r fc-hobit-output-print-na}
-x_output$pvalue[is.na(x_output$pvalue)] <- 1
-x_output$qvalue[is.na(x_output$qvalue)] <- 1
+x_output_mle$pvalue[is.na(x_output_mle$pvalue)] <- 1
+x_output_mle$qvalue[is.na(x_output_mle$qvalue)] <- 1
 ```
-
-
-
 
 
 ### Options
 
-#### Parallelization Options
+#### Options for HOBIT MLE
 
-Below is a basic example of running the `hobit()` function.
-By default, `hobit()` uses multiple threads,
-defined by the `mc.cores` option in the global environment, for MCMC sampling.
-If `mc.cores` is not set, it defaults to using a single thread.
+##### MLE parallelization
 
-```{r fc-hobit-basicopts-default, eval=FALSE}
-x_output <- hobit(x)
-```
+The `n_threads` argument controls parallel processing across homeolog tuples.
 
-Users can customize the number of threads to accelerate the testing process
-by either setting `mc.cores` (e.g., `options(mc.cores = 8)`)
-or specifying the `n_threads` argument directly. For example:
-
-```{r fc-hobit-basicopts-nthreads, eval=FALSE}
-x_output <- hobit(x, n_threads = 8)
-```
-
-Additionally, user can control parallelization of the MCMC sampling process via the `parallel_chains` argument.
-When specified, this argument is passed directly to the `sample()` function from the
-`r pkg("cmdstanr")` package, allowing parallel execution of MCMC chains.
-
-For example, to run four parallel chains, each on a separate thread:
-
-```{r fc-hobit-basicopts-run-parallel, eval=FALSE}
-x_output <- hobit(x, n_threads = 1, parallel_chains = 4, chains = 4)
-```
-
-Note that the `n_threads` and `parallel_chains` arguments
-control parallelization at different stages.
-The `n_threads` argument controls parallelization during the processing of homeologs,
-while `parallel_chains` controls parallelization during MCMC chains.
-Hence, if both are specified, users should reserve `n_threads` × `parallel_chains` threads.
-
-
-#### Model Options
-
-By default, HOBIT assumes that homeolog expression follows an NB distribution.
-In this model, the mean is sampled from a NIP distribution,
-and the dispersion parameter is estimated using the `estimateDisp()` function
-from the `r pkg("edgeR", "bioc")` package [@ref_edger].
-In addition to these defaults,
-HOBIT provides options for users to customize these assumptions as needed.
-
-To model homeolog expression,
-user can set `dist = "ZINB"`
-to switch from the default NB distribution to a zero-inflated negative binomial
-(ZINB) distribution.
-
-```{r fc-hobit-modelopts-ZINB, eval=FALSE}
-x_output <- hobit(x, dist = "ZINB")
-```
-
-For sampling homeolog expression ratios,
-HOBIT supports using a Dirichlet prior distribution instead of NIP.
-This can be enabled by setting the `use_Dirichlet` option, as shown below.
-
-```{r fc-hobit-modelopts-useprior, eval=FALSE}
-x_output <- hobit(x, use_Dirichlet = TRUE)
-```
-
-The default dispersion estimation method requires multiple biological replicates per group.
-If the dataset contains only a single replicate per group, dispersion estimation will fail.
-In such cases, HOBIT provides the `no_replicate` option.
-When set to `TRUE`, all replicates are treated as if they belong to a single group for dispersion estimation.
-
-```{r fc-hobit-modelopts-norep, eval=FALSE}
-x_output <- hobit(x, no_replicate = TRUE)
-```
-
-Note that while dispersion estimation without replicates can be enabled by setting `no_replicate = TRUE`,
-this approach is not recommended for biological experiments.
-For reliable statistical inference,
-we strongly encourage reconsidering the experimental design to include multiple biological replicates per group.
-
-
-#### MCMC Options
-
-Several options control the behavior of MCMC sampling and
-can significantly affect the accuracy and efficiency of inference.
-Although `hobit()` supports all options available in the `sample()` function
-from the `r pkg('cmdstanr')` package,
-the following are particularly important.
-
-- `chains`: Number of MCMC chains to run (default: `4`).
-- `iter_warmup`: Number of warmup iterations per chain (default: `1000`).
-- `iter_sampling`: Number of post-warmup iterations per chain (default: `1000`).
-- `save_warmup`: Whether to save warmup iterations (default: `FALSE`).
-- `thin`: Interval at which samples are saved (default: `1`). Typically unchanged unless memory issues arise.
-- `max_treedepth`: Maximum tree depth for the NUTS sampler (default: `10`). Increasing it may help resolve convergence issues but slows execution.
-- `adapt_delta`: Target acceptance rate for the sampler (default: `0.8`). Higher values improve stability but may reduce speed.
-
-The following example increases the number of chains and iterations to improve stability and convergence,
-though at the cost of longer execution times.
-
-```{r fc-hobit-mcmcopts-iters, eval=FALSE}
-x_output <- hobit(x, chains = 8, iter_warmup = 2000, iter_sampling = 10000)
-```
-
-If warnings or convergence issues arise with the default settings,
-consider increasing `max_treedepth` and `adapt_delta`.
-Note that increasing these parameters may result in slower sampling.
-
-```{r fc-hobit-mcmcopts-depth, eval=FALSE}
-x_output <- hobit(x, max_treedepth = 12, adapt_delta = 0.95)
-```
-
-For more advanced configuration options, refer to the
-[cmdstanr documentation](https://mc-stan.org/cmdstanr/reference/model-method-sample.html).
-
-
-#### Verbosity Options
-
-Verbosity options are available to control the verbosity of progress messages during sampling.
-
-- `refresh`: Frequency of progress updates to the console (default: `100`). Set to `0` to suppress updates.
-- `show_messages`: Whether to print all diagnostic and progress messages (default: `TRUE`).
-
-To reduce console output during execution, adjust these settings as shown below.
-
-```{r fc-hobit-vvopts, eval=FALSE}
-x_output <- hobit(x, refresh = 0, show_messages = FALSE)
+```{r fc-hobit-mle-nthreads, eval=FALSE}
+output_mle <- hobit(x, method = "mle", n_threads = 8)
 ```
 
 
+##### MLE optimization options
 
+The `gradient_tolerance` argument specifies the maximum absolute gradient
+allowed after optimization. Fits exceeding this threshold are reported as
+failed by the current implementation. The default is `1e-2`.
+The output columns `max_gradient_H0` and `max_gradient_H1` can be inspected when
+many tuples return `h0_fit_failed` or `h1_fit_failed`.
+
+```{r fc-hobit-mle-gradient, eval=FALSE}
+output_mle <- hobit(x, method = "mle", gradient_tolerance = 0.1)
+```
+
+Relaxing the gradient threshold may recover additional fits,
+but its effects on fitting coverage, type-I error, and LRT calibration should be
+checked before routinely using a less stringent value.
+
+The `lrt_tolerance` argument controls how slightly negative LRT values caused by
+numerical error are handled. Values between `-lrt_tolerance` and zero are set to
+zero; more negative values are reported as `lrt_failed`.
+
+Named arguments supplied through `...` are added to the `control` list of
+`nlminb()`. Common options include `iter.max`, `eval.max`, `rel.tol`, `x.tol`,
+and `trace`.
+
+```{r fc-hobit-mle-nlminb, eval=FALSE}
+output_mle <- hobit(x, method = "mle",
+    iter.max = 5000, eval.max = 5000, rel.tol = 1e-12, x.tol = 1e-10)
+```
+
+When optimization failures occur, first inspect `status`, the optimizer return
+codes, and the maximum-gradient columns. Increasing iteration limits is useful
+only when the optimizer has not already terminated successfully; a return code
+of zero accompanied by a gradient slightly above the acceptance threshold may
+instead indicate that the gradient criterion is stricter than the optimizer's
+own convergence criterion.
+
+
+##### Other options
+
+The `no_replicate` argument selects the approximation used when biological
+replicates are unavailable. With replicated data, edgeR estimates a common
+tagwise dispersion for each homeolog using all samples and a design matrix
+containing the experimental group; the estimated value is then shared across
+conditions during model fitting.
+
+```{r fc-hobit-mle-norep, eval=FALSE}
+output_mle <- hobit(x, method = "mle", no_replicate = TRUE)
+```
+
+Inference based on unreplicated data should therefore be interpreted cautiously.
+
+
+#### Options for HOBIT MCMC
+
+##### Stan parallel processing
+
+The `n_threads` argument controls parallel processing across homeolog tuples.
+By default, it follows the global `mc.cores` option, or uses one worker if that
+option is not set.
+
+```{r fc-hobit-mcmc-nthreads, eval=FALSE}
+output_strict <- hobit(x, method = "mcmc", mode = "strict",
+    n_threads = 8)
+```
+
+The `parallel_chains` argument controls the number of Stan chains run in
+parallel for each model and is passed to `cmdstanr`.
+
+```{r fc-hobit-mcmc-parallel-chains, eval=FALSE}
+output_strict <- hobit(x, method = "mcmc", mode = "strict",
+    n_threads = 1, chains = 4, parallel_chains = 4)
+```
+
+`n_threads` and `parallel_chains` act at different levels.
+If both exceed one, the analysis may use as many as
+`n_threads` $\times$ `parallel_chains` concurrent processes.
+
+
+##### Stan sampling options
+
+Additional arguments in `...` are passed to the `sample()` method of
+`cmdstanr`. Important options include:
+
+- `chains`: number of MCMC chains (default in `cmdstanr`: `4`)
+- `iter_warmup`: number of warmup iterations per chain
+- `iter_sampling`: number of post-warmup iterations per chain
+- `save_warmup`: whether warmup draws are saved
+- `thin`: interval at which post-warmup draws are retained
+- `max_treedepth`: maximum NUTS tree depth
+- `adapt_delta`: target acceptance probability
+- `seed`: random-number seed
+
+```{r fc-hobit-mcmc-iters, eval=FALSE}
+output_strict <- hobit(x, method = "mcmc", mode = "strict",
+    chains = 4, iter_warmup = 2000, iter_sampling = 5000)
+```
+
+If divergent transitions or tree-depth warnings occur,
+increasing `adapt_delta` or `max_treedepth` may improve sampling,
+at the cost of additional computation.
+
+```{r fc-hobit-mcmc-depth, eval=FALSE}
+output_strict <- hobit(x, method = "mcmc", mode = "strict",
+    adapt_delta = 0.95, max_treedepth = 12)
+```
+
+
+##### Stan verbosity options
+
+Console output from Stan can be controlled with options such as:
+
+- `refresh`: frequency of sampling progress updates; set to `0` to suppress them
+- `show_messages`: whether Stan diagnostic and progress messages are printed
+
+```{r fc-hobit-mcmc-verbosity, eval=FALSE}
+output_strict <- hobit(x, method = "mcmc", mode = "strict",
+    refresh = 0, show_messages = FALSE)
+```
+
+For additional options, refer to the
+[cmdstanr sampling documentation](https://mc-stan.org/cmdstanr/reference/model-method-sample.html).
+
+
+##### Other options
+
+The `no_replicate` argument selects the approximation used when biological
+replicates are unavailable.
+
+```{r fc-hobit-mcmc-norep, eval=FALSE}
+output_strict <- hobit(x, method = "mcmc", mode = "strict", no_replicate = TRUE)
+```
+
+However, dispersion cannot be estimated reliably
+from an experiment with no biological replication.
+Therefore, `no_replicate = TRUE` should be regarded as an
+approximation rather than a substitute for a replicated experimental design.

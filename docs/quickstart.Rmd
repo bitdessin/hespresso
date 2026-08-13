@@ -1,33 +1,24 @@
 # Quick Start
 
-```{r qs-setup, include=FALSE}
-source("_config.R")
-```
-
-
-The following example illustrates the complete workflow for HOBIT,
-from loading the data to performing the statistical test.
-
+The following example demonstrates the default HOBIT workflow,
+from loading the input data to performing the statistical test.
 
 ```{r qs-hobit, results='hide', message=FALSE, warning=FALSE}
-# gene expression
+# Gene expression data
 gexp <- read.table("data/c_flexuosa.0516.mini.txt.gz",
                    header = TRUE, sep = "\t", row.names = 1)
 
-# experimental groups
+# Experimental groups
 group <- c("wet", "wet", "wet", "dry", "dry", "dry")
 
-# mapping table to organize gene expression into homeolog expression
+# Mapping table for organizing gene expression into homeolog expression
 mapping_table <- read.table("data/c_flexuosa.homeolog.txt.gz",
                             header = TRUE, sep = "\t")
 
-# data preparation
-x <- newExpMX(gexp, group, mapping_table)
+# Prepare the input data
+x <- newSeqCountData(gexp, group, mapping_table)
 
-# normalization
-x <- norm_counts(x)
-
-# statistical test
+# Run the statistical test
 x_output <- hobit(x)
 ```
 
@@ -35,23 +26,9 @@ x_output <- hobit(x)
 head(x_output)
 ```
 
-The following example demonstrates the workflow for HomeoRoq.
-Compared to HOBIT, the only difference is that the statistical test is performed
-using the `homeoroq()` function instead of `hobit()`.
-
-```{r qs-homeoroq, results='hide', message=FALSE, warning=FALSE}
-gexp <- read.table("data/c_flexuosa.0516.mini.txt.gz",
-                   header = TRUE, sep = "\t", row.names = 1)
-group <- c("wet", "wet", "wet", "dry", "dry", "dry")
-mapping_table <- read.table("data/c_flexuosa.homeolog.txt.gz",
-                            header = TRUE, sep = "\t")
-
-x <- newExpMX(gexp, group, mapping_table)
-x <- norm_counts(x)
-x_output <- homeoroq(x)
-```
-
-```{r qs-homeoroq-output}
-head(x_output)
-```
-
+By default, HOBIT internally normalizes library sizes and
+performs statistical testing using maximum-likelihood estimation ([MLE](#hobit-mle)).
+Therefore, the input must consist of raw, unnormalized integer RNA-seq read counts.
+Do not provide transcripts per million (TPM),
+fragments per kilobase of transcript per million mapped reads (FPKM),
+counts per million (CPM), normalized counts, or log-transformed expression values.

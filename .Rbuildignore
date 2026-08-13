@@ -7,9 +7,7 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 
+^src/.*\.o$
+^src/.*\.so$
+
 docs
-
-R/dev_func.R
-
-.DS_Store
-^LICENSE\.md$

@@ -1,9 +1,5 @@
 ## Simulating Allohexaploid Data
 
-```{r sim-3x-setup, include=FALSE}
-source("../_config.R")
-```
-
 To simulate read counts for an allohexaploid with three subgenomes, set `n_subgenomes = 3`.
 In this case, the mean and dispersion parameters are derived from real RNA-seq data
 of allohexaploid wheat [@ref_wheatseedmatrix].
@@ -12,32 +8,37 @@ of allohexaploid wheat [@ref_wheatseedmatrix].
 x <- sim_homeolog_counts(n_subgenomes = 3)
 ```
 
-Simulation parameters can be retrieved from `@meta` slot (i.e., `x@meta`)
-and ground-truth homeologs with significant expression ratio shifts
-can be defined using the `def_sigShift()`, similar to the allotetraploid example.
+Simulation parameters can be retrieved from the `@meta` slot (i.e., `x@meta`).
+The ground-truth labels for homeolog expression ratio (HER) shifts are stored in
+`x@meta@is_shift`.
+Users can retrieve these labels directly from this slot or call `def_sigShift(x)`.
 
-For exmaple, using the `def_sigShift()` function can define homeologs
-with large changes satisfied the given thresholds in any subgenome.
+```{r sim-3x-meta-isshift}
+table(x@meta@is_shift)
+```
 
-```{r sim-3x-defsigshift}
-is_sig <- def_sigShift(x, Dmax = 0.2, ORmax = 2, operator = "OR")
+```{r sim-3x-meta-defsigshift-default}
+is_sig <- def_sigShift(x)
 table(is_sig)
 ```
 
-To define shifts specific to a single subgenome (e.g., the first subgenome),
-set the `base` argument accordingly as follows.
+As in the allotetraploid example, users can specify `Dmax` and `ORmax` in
+`def_sigShift()` to identify homeologs with significant HER shifts based on
+the true effect-size thresholds of interest. Because an allohexaploid has
+three subgenomes, specify which subgenome must satisfy the thresholds. For
+example, to identify HER changes with `Dmax > 0.2` or `ORmax > 2.0` in the
+first subgenome (`base = 1`), run:
 
-```{r sim-3x-defsigshift-base1}
-x <- sim_homeolog_counts(n_subgenomes = 3)
 
-is_sig <- def_sigShift(x, base = 1, Dmax = 0.2, ORmax = 2, operator = "OR")
+```{r sim-3x-defsigshift-base1-params}
+is_sig <- def_sigShift(x, base = 1, Dmax = 0.2, ORmax = 2.0, operator = "OR")
 table(is_sig)
 ```
 
 Visualization of allohexaploid data, comprising three subgenomes,
 follows a similar workflow as for allotetraploids.
-To display the distribution of expression ratios for the first subgenome,
-run as follows.
+To display the distribution of HERs for the first subgenome,
+run the following code.
 
 ```{r sim-3x-plotherdistr, fig.cap="Distribution of homeolog expression ratios for the first subgenome in a simulated allohexaploid across two groups."}
 x <- sim_homeolog_counts(n_subgenomes = 3)
@@ -51,8 +52,8 @@ grid.arrange(distr_plots_1[["group_1"]] + ggtitle("group_1 on 1st subgenome"),
              ncol = 2)
 ```
 
-Users can specify which subgenome to use for calculating expression ratios with the `base` argument.
-For example, to visualize ratios for the second or third subgenome, run as follows.
+Users can specify which subgenome to use for calculating HERs with the `base` argument.
+For example, to visualize HERs for the second or third subgenome, run the following code.
 
 ```{r sim-3x-plotherdistr-base, fig.cap="Distribution of homeolog expression ratios for all subgenomes in a simulated allohexaploid across two groups."}
 distr_plots_2 <- plot_HER_distr(x, base = 2)
@@ -68,14 +69,14 @@ grid.arrange(distr_plots_1[["group_1"]] + ggtitle("group_1 on #1"),
 ```
 
 The `plot_HER()` function also works for allohexaploids.
-By default, it plots expression ratios for the first subgenome.
+By default, it plots HERs for the first subgenome.
 
 ```{r sim-3x-plother, fig.cap="Changes in homeolog expression ratios of the first subgenome between two groups. Each point represents the expression ratio of the first subgenome in both groups."}
 plot_HER(x, alpha = 0.3)
 ```
 
-To plot ratios for a specific subgenome, set the `base` argument.
-For example, to visualize the second subgenome, run as follows.
+To plot HERs for a specific subgenome, set the `base` argument.
+For example, to visualize the second subgenome, run the following code.
 
 ```{r sim-3x-plother-base2, fig.cap="Changes in homeolog expression ratios of the second subgenome between two groups. Each point represents the expression ratio of the second subgenome in both groups."}
 plot_HER(x, base = 2, alpha = 0.3)
@@ -86,7 +87,7 @@ By default, shifts are defined across all subgenomes,
 so some homeologs may appear highlighted even if changes in the plotted subgenome are minor.
 
 ```{r sim-3x-plother-gt, fig.cap="Changes in homeolog expression ratios of the first subgenome between two groups. Orange points indicate homeologs with significant changes in any subgenome, while gray points indicate no significant change."}
-is_sig <- def_sigShift(x, base = 0, Dmax = 0.2, ORmax = 2)
+is_sig <- def_sigShift(x)
 plot_HER(x, label = is_sig, alpha = 0.3)
 ```
 
@@ -94,8 +95,6 @@ To highlight only homeologs that meet the thresholds in a specific subgenome,
 specify the `base` argument.
 
 ```{r sim-3x-plother-gt-base2, fig.cap="Changes in homeolog expression ratios of the first subgenome between two groups. Orange points indicate homeologs with significant changes in the first subgenome, while gray points show no significant change."}
-is_sig_b1 <- def_sigShift(x, base = 1, Dmax = 0.2, ORmax = 1.8)
+is_sig_b1 <- def_sigShift(x, base = 1, Dmax = 0.2, ORmax = 2.0)
 plot_HER(x, base = 1, label = is_sig_b1, alpha = 0.3)
 ```
-
-

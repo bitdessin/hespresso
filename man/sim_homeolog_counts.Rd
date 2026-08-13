@@ -2,64 +2,77 @@
 % Please edit documentation in R/sim.R
 \name{sim_homeolog_counts}
 \alias{sim_homeolog_counts}
-\title{Generate Artificial RNA-seq Read Counts Simulating Homeolog Expression}
+\title{Generate Artificial RNA-seq Read Counts for Homeolog-Expression Simulation}
 \usage{
 sim_homeolog_counts(
   n_genes = 10000,
   n_replicates = c(3, 3),
   n_subgenomes = 2,
+  prop_shift = 0.1,
+  prop_deg = 0.1,
+  prop_zero = 0.05,
   group_names = NULL,
   subgenome_names = NULL,
-  seed_expmx = NULL
+  seed_counts = NULL
 )
 }
 \arguments{
-\item{n_genes}{Integer. Number of genes to simulate.}
+\item{n_genes}{Integer. Number of homeolog tuples to simulate.}
 
-\item{n_replicates}{Integer vector. Number of replicates per group.}
+\item{n_replicates}{Integer vector. Number of replicates for each condition.}
 
-\item{n_subgenomes}{Integer. Number of subgenomes.}
+\item{n_subgenomes}{Integer. Number of subgenomes to simulate.}
 
-\item{group_names}{Character vector. Names of the condition groups.}
+\item{prop_shift}{Numeric between 0 and 1. Proportion of genes assigned to the
+exact homeolog-expression-ratio shift alternative. The default is 0.10.}
 
-\item{subgenome_names}{Character vector. Names of the subgenomes.}
+\item{prop_deg}{Numeric between 0 and 1. Proportion of genes assigned a
+total-expression change independently of homeolog-expression-ratio status.
+The default is 0.10.}
 
-\item{seed_expmx}{A data.frame or matrix representing a normalized expression
-matrix to be used for defining the sampling population.}
+\item{prop_zero}{Numeric between 0 and 1. Proportion of genes
+assigned a condition-by-subgenome structural zero, producing homeolog
+expression ratios near 0 or 1.}
+
+\item{group_names}{Character vector of condition names.}
+
+\item{subgenome_names}{Character vector of subgenome names.}
+
+\item{seed_counts}{\code{NULL}, matrix, or data.frame used to construct the
+empirical mean-dispersion population. If \code{NULL}, bundled reference data
+are used for two or three subgenomes.}
 }
 \value{
-An object of class \linkS4class{ExpMX},
-containing simulated expression data.
+An \code{SeqCountData} object containing raw integer counts. Its \code{meta} slot is a
+\code{SimParams} object containing the exact homeolog-expression-ratio labels
+(\code{is_shift}), independent total-expression labels (\code{is_deg}), true means,
+ratios, dispersions, library-size offsets, and effect-size summaries.
 }
 \description{
-Simulates artificial RNA-seq read counts for allopolyploids based on a
-negative binomial distribution, mimicking homeolog expression patterns
-across subgenomes.
+Generates model-matched raw integer RNA-seq counts for evaluating HOBIT.
+The simulator separates total expression from homeolog expression ratios,
+creates exact null genes and explicit ratio-shift genes, uses one shared
+dispersion per gene and subgenome across conditions, adds sample-specific
+library-size offsets, and draws each observation once from a negative-
+binomial distribution.
 }
 \details{
-This function performs the following steps to generate synthetic read counts:
-(1) prepares a sampling population,
-(2) modifies mean expression values to simulate differentially expressed genes,
-(3) introduces variation in homeolog expression ratios,
-(4) estimates dispersion parameters based on adjusted means, and
-(5) samples counts from a negative binomial distribution using the calculated
-means and dispersions.
-
-By default, the function uses real RNA-seq datasets from \emph{Cardamine flexuosa}
-and wheat to define the sampling population for allopolyploids consiting of
-two or three subgenomes, respectively, in step (1). Alternatively, users can
-provide their own normalized expression matrix via the \code{seed_expmx} argument.
-The matrix should have genes as rows and replicates (from the same condition)
-as columns.
+The returned \code{SeqCountData} object contains the simulated count matrices and an
+associated \code{SimParams} object in \code{x@meta}. The latter records the generating
+parameters, exact H0/H1 labels, and true effect-size summaries.
 }
 \examples{
 x <- sim_homeolog_counts()
+x <- sim_homeolog_counts(
+    n_genes = 100,
+    n_replicates = c(3, 3),
+    n_subgenomes = 2
+)
 
-# simulating allotetraploids with 3 replicates in each group
-x <- sim_homeolog_counts(n_genes = 100,
-                         n_replicates = c(3, 3), n_subgenomes = 2)
+table(x@meta@is_shift)
+table(x@meta@is_deg, x@meta@is_shift)
 
-# simulating allohexaploids with 5 replicats in each group
-x <- sim_homeolog_counts(n_genes = 100,
-                         n_replicates = c(5, 5), n_subgenomes =  3)
+# Simulate a 1\% homeolog-expression-ratio shift prevalence.
+x_rare <- sim_homeolog_counts(n_genes = 10000, prop_shift = 0.01)
+
 }

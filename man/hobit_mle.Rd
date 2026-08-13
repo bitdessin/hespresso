@@ -9,13 +9,14 @@ hobit_mle(
   no_replicate = FALSE,
   eps = 0.001,
   n_threads = 1L,
-  gradient_tolerance = 1e-04,
+  gradient_tolerance = 0.01,
   lrt_tolerance = 1e-06,
+  .debug = FALSE,
   ...
 )
 }
 \arguments{
-\item{x}{An \linkS4class{ExpMX} object containing raw integer RNA-seq counts
+\item{x}{An \linkS4class{SeqCountData} object containing raw integer RNA-seq counts
 for corresponding homeologs.}
 
 \item{no_replicate}{Logical. If \code{FALSE}, a common tagwise dispersion
@@ -38,13 +39,18 @@ likelihood ratio statistic caused by numerical error. Values between
 \code{-lrt_tolerance} and zero are set to zero. More negative values are treated
 as optimization failures.}
 
+\item{.debug}{Logical. If \code{TRUE}, return all statistical test results for
+detailed analysis or debugging. If \code{FALSE}, return only the main
+statistical test results.}
+
 \item{...}{Named arguments added to the \code{control} argument of
 \code{\link[stats]{nlminb}}, such as \code{iter.max}, \code{eval.max}, \code{rel.tol},
 and \code{x.tol}.}
 }
 \value{
-A data frame with one row per homeolog tuple. Principal columns
-include:
+By default, a data frame with one row per homeolog tuple containing
+\code{gene}, \code{pvalue}, \code{qvalue}, \code{Dmax}, \code{LRmax}, \code{RRmax}, and \verb{theta0__*}
+columns. When \code{.debug = TRUE}, the data frame additionally contains:
 
 \itemize{
 \item \code{pvalue}: p-value from the likelihood ratio test;
@@ -52,7 +58,7 @@ include:
 \item \code{lrt}: likelihood ratio statistic;
 \item \code{df}: asymptotic degrees of freedom;
 \item \verb{theta0__*}: null model maximum-likelihood ratio estimates;
-\item \verb{theta1__*__*}: condition specific alternative model estimates;
+\item \verb{theta1__*__*}: condition-specific alternative model estimates;
 \item \verb{D__*}: differences in individual subgenome proportions;
 \item \verb{LR__*}: changes in pairwise subgenome log-ratios;
 \item \verb{RR__*}: exponentiated pairwise log-ratio changes;
@@ -74,43 +80,14 @@ materially smaller than the null model likelihood.
 }
 \description{
 Tests whether homeolog expression ratios differ among experimental
-conditions by fitting null and alternative negative-binomial models
-using maximum likelihood estimation.
+conditions by fitting null and alternative negative-binomial models with
+maximum likelihood estimation.
 }
 \details{
-This function independently fits a null model and an alternative model to
-test whether homeolog expression ratios differ among experimental
-conditions.
-
-Under the null hypothesis, all conditions share a single homeolog expression
-ratio vector:
-
-\deqn{H_0: \boldsymbol{\theta}_1 = \boldsymbol{\theta}_2 = \cdots = \boldsymbol{\theta}_C.}
-
-Under the alternative hypothesis, each condition has its own homeolog
-expression ratio vector:
-
-\deqn{H_1: \boldsymbol{\theta}_c \text{ may differ among conditions}.}
-
-Total gene expression remains condition specific under both hypotheses.
-The null and alternative models are optimized independently, and the
-likelihood ratio statistic is calculated as
-
-\deqn{2\left{ \ell(\widehat{\boldsymbol{\eta}}_1) - \ell(\widehat{\boldsymbol{\eta}}_0) \right}.}
-
-The function supports two or more subgenomes. For three or more subgenomes,
-including the A, B, and D subgenomes of wheat, pairwise effects are reported
-as log-ratio changes (\code{LR}) and their exponentiated ratio-of-ratios (\code{RR}).
-These quantities represent effect sizes rather than separate pairwise
-hypothesis tests.
-
-Negative-binomial dispersion is estimated using
-\code{\link[edgeR]{estimateDisp}} and is then treated as fixed during
-maximum-likelihood fitting.
-
-Raw counts are retained during fitting. TMM normalization factors are
-calculated from total homeolog expression and included in the model as
-sample-specific offsets.
+HOBIT MLE fits the null and alternative models independently and compares
+them with a likelihood ratio test. Detailed methodological background and
+usage guidance are available at
+\url{https://bitdessin.github.io/hespresso/}.
 }
 \examples{
 x <- sim_homeolog_counts(n_genes = 10)

@@ -7,7 +7,7 @@
 plot_HER(x, base = 1, groups = NULL, label = NULL, size = 3, alpha = 0.8)
 }
 \arguments{
-\item{x}{An \linkS4class{ExpMX} class object.}
+\item{x}{An \linkS4class{SeqCountData} object.}
 
 \item{base}{Integer or character. An index or name specifying the subgenome
 used for calculating homeolog expression ratios.}
@@ -25,7 +25,7 @@ if provided.}
 transparency level of points in the scatter plot.}
 }
 \value{
-A ggplot scatter chart object.
+A ggplot scatter-plot object.
 }
 \description{
 Creates a scatter plot to visualize homeolog expression ratios between two
